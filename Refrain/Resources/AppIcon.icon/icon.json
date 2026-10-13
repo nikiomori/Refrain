@@ -1,0 +1,29 @@
+{
+  "fill": {
+    "linear-gradient": [
+      "display-p3:1.00000,1.00000,1.00000,1.00000",
+      "display-p3:0.86000,0.86000,0.90000,1.00000"
+    ]
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "mark.svg",
+          "name": "mark",
+          "glass": true
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
+      },
+      "specular": true
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

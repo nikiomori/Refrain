@@ -1,0 +1,376 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Address" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адрес"
+          }
+        }
+      }
+    },
+    "Apple Dictation" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Dictation"
+          }
+        }
+      }
+    },
+    "Apple Speech" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Speech"
+          }
+        }
+      }
+    },
+    "Apple's newer model. Its languages download once, for every app on this Mac." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новая модель Apple. Языки скачиваются один раз для всех приложений на этом Mac."
+          }
+        }
+      }
+    },
+    "Apps send it audio through the OpenAI API they already know, and get the words back. It runs on this Mac's Neural Engine: every word stays here." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Приложения отправляют ему звук через знакомый им OpenAI API и получают обратно слова. Он работает на Neural Engine этого Mac: ни одно слово не уходит наружу."
+          }
+        }
+      }
+    },
+    "Apps that speak the OpenAI API transcribe here: set this address as the server, any model name, no key. Only this Mac can connect, never a web page." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сюда обращаются приложения, которые умеют OpenAI API: укажите этот адрес как сервер, любую модель и пустой ключ. Подключиться может только этот Mac, веб-страницы — нет."
+          }
+        }
+      }
+    },
+    "Choose a port from 1024 to 65535." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите порт от 1024 до 65535."
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать"
+          }
+        }
+      }
+    },
+    "Copy Address" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать адрес"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Готово"
+          }
+        }
+      }
+    },
+    "Download" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скачать"
+          }
+        }
+      }
+    },
+    "Download Parakeet (630 MB)" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скачать Parakeet (630 МБ)"
+          }
+        }
+      }
+    },
+    "Downloaded — %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скачан — %@"
+          }
+        }
+      }
+    },
+    "English, German, French, Spanish, Japanese, Chinese and two dozen more use Apple's models, which macOS already has or downloads by itself. For Russian, Ukrainian, Polish, Czech and other European languages, Parakeet is far more accurate." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Английский, немецкий, французский, испанский, японский, китайский и ещё два десятка языков распознают модели Apple: они уже есть в macOS, или она скачает их сама. Для русского, украинского, польского, чешского и других европейских языков гораздо точнее Parakeet."
+          }
+        }
+      }
+    },
+    "Every other language macOS can dictate." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все остальные языки, которые знает диктовка macOS."
+          }
+        }
+      }
+    },
+    "General" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основные"
+          }
+        }
+      }
+    },
+    "Models" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модели"
+          }
+        }
+      }
+    },
+    "Not downloaded" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не скачан"
+          }
+        }
+      }
+    },
+    "Open at Login" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открывать при входе"
+          }
+        }
+      }
+    },
+    "Parakeet" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parakeet"
+          }
+        }
+      }
+    },
+    "Parakeet is downloaded" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parakeet скачан"
+          }
+        }
+      }
+    },
+    "Point Reprise, VoiceInk or your scripts here. Any model name, no key." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Укажите этот адрес в Reprise, VoiceInk или своих скриптах. Модель любая, ключ не нужен."
+          }
+        }
+      }
+    },
+    "Port" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порт"
+          }
+        }
+      }
+    },
+    "Port %@ is used by another app." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порт %@ занят другим приложением."
+          }
+        }
+      }
+    },
+    "Quit Refrain" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завершить Refrain"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Готов"
+          }
+        }
+      }
+    },
+    "Refrain is your Mac's hearing" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refrain — слух вашего Mac"
+          }
+        }
+      }
+    },
+    "Refrain — transcribing" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refrain — идёт расшифровка"
+          }
+        }
+      }
+    },
+    "Runs on the Neural Engine. Far more accurate than Apple's older model in these languages; Russian makes less than half the mistakes. Pretype shares the same copy." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Работает на Neural Engine. На этих языках гораздо точнее старой модели Apple: в русском ошибок в два с лишним раза меньше. Pretype использует ту же копию."
+          }
+        }
+      }
+    },
+    "Settings…" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройки…"
+          }
+        }
+      }
+    },
+    "Starting…" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запуск…"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Состояние"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Системная"
+          }
+        }
+      }
+    },
+    "Transcribing — %@ of %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расшифровка — %@ из %@"
+          }
+        }
+      }
+    },
+    "Transcribing — %@ of %@, %lld waiting" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расшифровка — %@ из %@, ещё %lld в очереди"
+          }
+        }
+      }
+    },
+    "Welcome to Refrain" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добро пожаловать в Refrain"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,12 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    # Needs Xcode 27 (Swift 6.4, macOS 27 SDK), as Reprise does.
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v5
+      - run: swift test
+      - run: xcodebuild -project Refrain.xcodeproj -scheme Refrain -destination 'platform=macOS,arch=arm64' build

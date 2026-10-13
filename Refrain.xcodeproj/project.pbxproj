@@ -1,0 +1,418 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		068986B6DD4824F463CA567E /* RefrainKit in Frameworks */ = {isa = PBXBuildFile; productRef = C081CB534DE3A6F7632EFE1F /* RefrainKit */; };
+		47497B9E8349EC870ECD65D8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D1E52A44B91F556D155AD810 /* Localizable.xcstrings */; };
+		59F4B25127B3AD37002F0D56 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 637C13C521279E1E953759B8 /* SettingsView.swift */; };
+		5AEB0E8DE81CE8E5E0B18127 /* RefrainServer in Frameworks */ = {isa = PBXBuildFile; productRef = 157AD9A1663020E6E9430BAB /* RefrainServer */; };
+		65C121F7C36EEC86A364F5E1 /* RefrainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323EE87D93EE14F01718CD91 /* RefrainApp.swift */; };
+		74FAF1C2D4802CB597FC87BD /* DebugSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2653C570484B581FCF54A73 /* DebugSnapshots.swift */; };
+		7EF580487DB33E3D4C785092 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44783DF23B195626C4D3F6BF /* WelcomeView.swift */; };
+		993167D86CAD2EE8DEF64D42 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 35BFDB87C26C441F5DC72086 /* LICENSE */; };
+		C7B50A7469AB1561CFCFEA11 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */; };
+		CD8D2F43C872E45D81F7E10B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C739E9E7AE66EABC811C94 /* AppModel.swift */; };
+		E26A1B5A06A5CE1889EB6C90 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 52F2F7D1FCDEFFCE3FA5A59D /* AppIcon.icon */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		18A3DCCC2318B99A2457D559 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		317E8DCD93492EDD46319DE4 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		323EE87D93EE14F01718CD91 /* RefrainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefrainApp.swift; sourceTree = "<group>"; };
+		34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
+		35BFDB87C26C441F5DC72086 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
+		44783DF23B195626C4D3F6BF /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		52F2F7D1FCDEFFCE3FA5A59D /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		637C13C521279E1E953759B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8577B1F9B251E121BDF4EE00 /* whisper */ = {isa = PBXFileReference; lastKnownFileType = folder; name = whisper; path = .; sourceTree = SOURCE_ROOT; };
+		C0C739E9E7AE66EABC811C94 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		D1E52A44B91F556D155AD810 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		F2653C570484B581FCF54A73 /* DebugSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSnapshots.swift; sourceTree = "<group>"; };
+		F77D7669DBD76EE0337D706C /* Refrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Refrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3FCF59DDD3E947667E9D65F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				068986B6DD4824F463CA567E /* RefrainKit in Frameworks */,
+				5AEB0E8DE81CE8E5E0B18127 /* RefrainServer in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		127C0FA259D43EFBA1DE1D81 = {
+			isa = PBXGroup;
+			children = (
+				35BFDB87C26C441F5DC72086 /* LICENSE */,
+				34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */,
+				C34339377AEF0DA63EB999E8 /* Config */,
+				71369FE68363A345F10263A3 /* Packages */,
+				5748E76902236178CD866160 /* Refrain */,
+				5550B5E78008C6183E496755 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4330CBBACD3E096FD00FDC26 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				52F2F7D1FCDEFFCE3FA5A59D /* AppIcon.icon */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5550B5E78008C6183E496755 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F77D7669DBD76EE0337D706C /* Refrain.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5748E76902236178CD866160 /* Refrain */ = {
+			isa = PBXGroup;
+			children = (
+				C0C739E9E7AE66EABC811C94 /* AppModel.swift */,
+				F2653C570484B581FCF54A73 /* DebugSnapshots.swift */,
+				18A3DCCC2318B99A2457D559 /* Info.plist */,
+				D1E52A44B91F556D155AD810 /* Localizable.xcstrings */,
+				323EE87D93EE14F01718CD91 /* RefrainApp.swift */,
+				637C13C521279E1E953759B8 /* SettingsView.swift */,
+				44783DF23B195626C4D3F6BF /* WelcomeView.swift */,
+				4330CBBACD3E096FD00FDC26 /* Resources */,
+			);
+			path = Refrain;
+			sourceTree = "<group>";
+		};
+		71369FE68363A345F10263A3 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				8577B1F9B251E121BDF4EE00 /* whisper */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		C34339377AEF0DA63EB999E8 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				317E8DCD93492EDD46319DE4 /* Base.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		72955A1B38AF6866576F460B /* Refrain */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DE5DF8A785ECB31AFE2BF416 /* Build configuration list for PBXNativeTarget "Refrain" */;
+			buildPhases = (
+				393C4475FC06D72575460506 /* Sources */,
+				63B8A62E6DF6CF275F5237B3 /* Resources */,
+				3FCF59DDD3E947667E9D65F7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Refrain;
+			packageProductDependencies = (
+				C081CB534DE3A6F7632EFE1F /* RefrainKit */,
+				157AD9A1663020E6E9430BAB /* RefrainServer */,
+			);
+			productName = Refrain;
+			productReference = F77D7669DBD76EE0337D706C /* Refrain.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5272ECFFD7E700CD5CF406B4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					72955A1B38AF6866576F460B = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = F327FD49BFA63ADCB99FBAD2 /* Build configuration list for PBXProject "Refrain" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				ru,
+			);
+			mainGroup = 127C0FA259D43EFBA1DE1D81;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9F7C868952892E97105DB2EF /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5550B5E78008C6183E496755 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				72955A1B38AF6866576F460B /* Refrain */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		63B8A62E6DF6CF275F5237B3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E26A1B5A06A5CE1889EB6C90 /* AppIcon.icon in Resources */,
+				993167D86CAD2EE8DEF64D42 /* LICENSE in Resources */,
+				47497B9E8349EC870ECD65D8 /* Localizable.xcstrings in Resources */,
+				C7B50A7469AB1561CFCFEA11 /* THIRD_PARTY_NOTICES.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		393C4475FC06D72575460506 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD8D2F43C872E45D81F7E10B /* AppModel.swift in Sources */,
+				74FAF1C2D4802CB597FC87BD /* DebugSnapshots.swift in Sources */,
+				65C121F7C36EEC86A364F5E1 /* RefrainApp.swift in Sources */,
+				59F4B25127B3AD37002F0D56 /* SettingsView.swift in Sources */,
+				7EF580487DB33E3D4C785092 /* WelcomeView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		549D2CD0BCE69EBB6AA39A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 317E8DCD93492EDD46319DE4 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		590150F330B4DF9FF6C60409 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 317E8DCD93492EDD46319DE4 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		7B317102F58E9FFC08E51950 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Refrain/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
+				PRODUCT_NAME = Refrain;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		E0D686A6E096D3DF3DF72FC8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Refrain/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
+				PRODUCT_NAME = Refrain;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DE5DF8A785ECB31AFE2BF416 /* Build configuration list for PBXNativeTarget "Refrain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7B317102F58E9FFC08E51950 /* Debug */,
+				E0D686A6E096D3DF3DF72FC8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F327FD49BFA63ADCB99FBAD2 /* Build configuration list for PBXProject "Refrain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				549D2CD0BCE69EBB6AA39A01 /* Debug */,
+				590150F330B4DF9FF6C60409 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		9F7C868952892E97105DB2EF /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		157AD9A1663020E6E9430BAB /* RefrainServer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RefrainServer;
+		};
+		C081CB534DE3A6F7632EFE1F /* RefrainKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RefrainKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5272ECFFD7E700CD5CF406B4 /* Project object */;
+}
