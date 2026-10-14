@@ -10,12 +10,15 @@ public struct TranscriptionRequest: Sendable {
     public var prompt: String?
     /// Spellings to listen for, ahead of the names in `prompt`.
     public var keywords: [String] = []
+    /// Tell the voices apart (`diarized_json`).
+    public var speakers = false
 
-    public init(file: URL, language: String?, prompt: String?, keywords: [String] = []) {
+    public init(file: URL, language: String?, prompt: String?, keywords: [String] = [], speakers: Bool = false) {
         self.file = file
         self.language = language
         self.prompt = prompt
         self.keywords = keywords
+        self.speakers = speakers
     }
 }
 
@@ -140,15 +143,16 @@ public final class Server: @unchecked Sendable {
         defer { form.file.map { try? FileManager.default.removeItem(at: $0) } }
         guard let file = form.file else { throw HTTPError(400, "The request has no `file`.") }
         let format = form["response_format"] ?? "json"
-        guard ["json", "text", "verbose_json", "srt", "vtt"].contains(format) else {
-            throw HTTPError(400, "response_format must be json, text, verbose_json, srt or vtt.")
+        guard ["json", "text", "verbose_json", "diarized_json", "srt", "vtt"].contains(format) else {
+            throw HTTPError(400, "response_format must be json, text, verbose_json, diarized_json, srt or vtt.")
         }
         // `languages[]` and `keywords[]` are what OpenAI's gpt-transcribe takes; the first language picks the engine.
         let language = form["language"] ?? form.list("languages").first
 
         let transcript: Transcript
         do {
-            transcript = try await transcribe(.init(file: file, language: language, prompt: form["prompt"], keywords: form.list("keywords")))
+            transcript = try await transcribe(.init(file: file, language: language, prompt: form["prompt"],
+                                                    keywords: form.list("keywords"), speakers: format == "diarized_json"))
         } catch let error as TranscriptionError {
             if case .unsupportedSystem = error { throw HTTPError(500, error.localizedDescription) }
             throw HTTPError(400, error.localizedDescription)
@@ -159,6 +163,7 @@ public final class Server: @unchecked Sendable {
         case "text": return .text(transcript.text + "\n")
         case "srt": return .text(Subtitles.srt(transcript.segments))
         case "vtt": return .text(Subtitles.vtt(transcript.segments), type: "text/vtt")
+        case "diarized_json": return .json(Diarized(transcript))
         case "verbose_json":
             let granularities = Set(form.list("timestamp_granularities"))
             return .json(Verbose(transcript, segments: granularities.isEmpty || granularities.contains("segment"),
@@ -278,6 +283,31 @@ struct Verbose: Encodable {
             self.segments = transcript.segments.enumerated().map { .init(id: $0, start: $1.start, end: $1.end, text: $1.text) }
         }
         if words { self.words = transcript.words.map { .init(word: $0.text, start: $0.start, end: $0.end) } }
+    }
+}
+
+/// `diarized_json` as OpenAI writes it for gpt-4o-transcribe-diarize: phrases with their voice.
+struct Diarized: Encodable {
+    struct Segment: Encodable {
+        var type = "transcript.text.segment"
+        var id: String
+        var start: Double
+        var end: Double
+        var text: String
+        var speaker: String
+    }
+
+    var task = "transcribe"
+    var duration: Double
+    var text: String
+    var segments: [Segment]
+
+    init(_ transcript: Transcript) {
+        duration = transcript.duration
+        text = transcript.text
+        segments = transcript.segments.enumerated().map {
+            .init(id: "seg_\($0)", start: $1.start, end: $1.end, text: $1.text, speaker: $1.speaker ?? "A")
+        }
     }
 }
 

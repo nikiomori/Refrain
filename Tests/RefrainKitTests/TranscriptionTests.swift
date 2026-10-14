@@ -60,3 +60,17 @@ import Testing
     #expect(cuts.count == 3 && cuts.first == 0 && cuts.last == AVAudioFramePosition(20 * rate))
     #expect((11.0...11.5).contains(Double(cuts[1]) / rate))
 }
+
+/// Words go to the voice whose turn covers them, or the nearest one; a change of voice ends the phrase.
+@Test func phrasesFollowTheVoices() {
+    let words = [("Hi,", 0.0, 0.3), ("there.", 0.4, 0.8), ("Hello", 1.0, 1.4), ("again", 1.5, 1.9), ("Bye.", 2.6, 2.9)]
+        .map { Transcript.Segment(start: $0.1, end: $0.2, text: $0.0) }
+    let turns = [Speakers.Turn(speaker: "S7", start: 0, end: 0.9), .init(speaker: "S2", start: 1.0, end: 2.0),
+                 .init(speaker: "S7", start: 3.0, end: 3.5)]  // "Bye." falls between turns, nearer the last
+    #expect(Speakers.phrases(words, turns: turns) == [
+        .init(start: 0, end: 0.8, text: "Hi, there.", speaker: "A"),
+        .init(start: 1.0, end: 1.9, text: "Hello again", speaker: "B"),
+        .init(start: 2.6, end: 2.9, text: "Bye.", speaker: "A"),
+    ])
+    #expect(Speakers.phrases([], turns: turns).isEmpty)
+}

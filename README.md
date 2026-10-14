@@ -34,14 +34,14 @@ with open("call.m4a", "rb") as f:
 - **`file`**: anything AVFoundation reads: m4a, mp3, wav, caf, mp4.
 - **`language`**: ISO 639-1 (`ru`, `en`). It picks the engine. Without it, Parakeet detects the language if it's downloaded, otherwise Apple's model for the system language is used. `languages[]`, as `gpt-transcribe` takes it, works too: the first one counts.
 - **`prompt`** and **`keywords[]`**: the keywords, and the names and terms in the prompt (capitalized mid-sentence, or like `iPhone`, `MLX`), are passed as spelling hints to Apple's older model, the only engine that takes them. Apple's newer model spells names the same with hints or without, and Parakeet takes none.
-- **`response_format`**: `json`, `text`, `srt`, `vtt` or `verbose_json`, with segment timestamps and, with `timestamp_granularities[]=word`, word timestamps.
+- **`response_format`**: `json`, `text`, `srt`, `vtt` or `verbose_json`, with segment timestamps and, with `timestamp_granularities[]=word`, word timestamps. `diarized_json`, as OpenAI's `gpt-4o-transcribe-diarize` returns it, tells the voices apart: each phrase has a `speaker`, `A`, `B`… It needs the speaker model (22 MB, Settings › Models); without it the request gets a 400.
 - **`model`** is accepted and ignored. `GET /v1/models` lists one model, `auto`.
 
 Requests run one at a time, in order. The port can be changed in Settings; Refrain never moves to another one on its own, since clients have it written down.
 
 ### Connect your apps
 
-- **[Reprise](https://github.com/nikiomori/reprise):** Settings › Transcription › Service › *Refrain (this Mac)*. When Refrain is running, Reprise offers it there itself.
+- **[Reprise](https://github.com/nikiomori/reprise):** Settings › Transcription › Service › *Refrain (this Mac)*. When Refrain is running, Reprise offers it there itself. With each side saved on its own and the speaker model downloaded, the transcript says who spoke: you, or which of the others.
 - **[Pretype](https://github.com/nikiomori/pretype):** Settings › API › *Use an API model for dictation* › Provider › *Refrain (this Mac)*. Pretype then dictates through Refrain's models instead of loading its own, with the live preview (it re-sends the take about once a second), and sends the names in the field as spelling hints.
 - **Scripts on the OpenAI SDK** (Python, Node) read the server from the environment, so they run unchanged:
   ```sh
@@ -94,7 +94,7 @@ Memory is the physical footprint, as Activity Monitor shows it. The app is 13 MB
 
 - Refrain listens on `127.0.0.1` only. `Host` must be `127.0.0.1` or `localhost` (no DNS rebinding), a request with a web page's `Origin` is refused, and there are no CORS headers: web pages can't use it.
 - The upload goes to a temporary file that is deleted once the response is sent; whatever a crash leaves behind is deleted at the next launch. No text is stored or logged: the log holds durations and processing times.
-- The only network traffic is Parakeet's download, when you ask for it, and a check for updates on GitHub once a day, which Settings can turn off. Apple's language packs are downloaded by macOS.
+- The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them, and a check for updates on GitHub once a day, which Settings can turn off. Apple's language packs are downloaded by macOS.
 
 ## Build
 

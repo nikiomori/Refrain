@@ -25,6 +25,9 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private(set) var downloading: Double?
     private(set) var downloadError: String?
     private(set) var parakeetDownloaded = Parakeet.isDownloaded
+    private(set) var speakersDownloaded = Speakers.isDownloaded
+    private(set) var downloadingSpeakers = false
+    private(set) var speakersError: String?
 
     static let defaultPort = 8178
     private(set) var port = UserDefaults.standard.object(forKey: "port") as? Int ?? defaultPort
@@ -40,18 +43,25 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         warmUp()
     }
 
-    /// After an update of macOS the Neural Engine compiles Parakeet anew, ~11 s: done now, in
-    /// the background, rather than in the first request. Also right after the download.
+    /// After an update of macOS the Neural Engine compiles each model anew: Parakeet ~11 s, the
+    /// speaker model longer still. Done now, in the background, rather than in the first request.
+    /// Also right after a download.
     private func warmUp() {
         let system = ProcessInfo.processInfo.operatingSystemVersionString
-        guard Parakeet.isDownloaded, UserDefaults.standard.string(forKey: "warmedUpOn") != system else { return }
-        Task(priority: .background) {
-            do {
-                try await Parakeet.warmUp()
-                UserDefaults.standard.set(system, forKey: "warmedUpOn")
-                log.notice("Parakeet compiled for \(system, privacy: .public)")
-            } catch {
-                log.error("Parakeet warm-up: \(error.localizedDescription, privacy: .public)")
+        let models: [(name: String, key: String, ready: Bool, load: @Sendable () async throws -> Void)] = [
+            ("Parakeet", "warmedUpOn", Parakeet.isDownloaded, Parakeet.warmUp),
+            ("The speaker model", "speakersWarmedUpOn", Speakers.isDownloaded, Speakers.warmUp),
+        ]
+        for model in models where model.ready && UserDefaults.standard.string(forKey: model.key) != system {
+            Task(priority: .background) {
+                let started = ContinuousClock.now
+                do {
+                    try await model.load()
+                    UserDefaults.standard.set(system, forKey: model.key)
+                    log.notice("\(model.name, privacy: .public) compiled for \(system, privacy: .public) in \(started.duration(to: .now), privacy: .public)")
+                } catch {
+                    log.error("\(model.name, privacy: .public) warm-up: \(error.localizedDescription, privacy: .public)")
+                }
             }
         }
     }
@@ -109,7 +119,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                 if case .transcribing = status { status = .ready }
             }
             return try await Transcription.transcribe(file: request.file, language: request.language,
-                                                      prompt: request.prompt, keywords: request.keywords) { done, total in
+                                                      prompt: request.prompt, keywords: request.keywords,
+                                                      speakers: request.speakers) { done, total in
                 Task { @MainActor in
                     // Late reports of a finished file don't bring its status back.
                     if AppModel.shared.running == id { AppModel.shared.status = .transcribing(done: done, of: total) }
@@ -140,6 +151,24 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             parakeetDownloaded = Parakeet.isDownloaded
             warmUp()
         }
+    }
+
+    /// 22 MB: a spinner, not a progress bar.
+    func downloadSpeakers() {
+        guard !downloadingSpeakers else { return }
+        downloadingSpeakers = true
+        speakersError = nil
+        Task {
+            do { try await Speakers.download() } catch { speakersError = error.localizedDescription }
+            downloadingSpeakers = false
+            speakersDownloaded = Speakers.isDownloaded
+            warmUp()
+        }
+    }
+
+    func deleteSpeakers() {
+        Speakers.delete()
+        speakersDownloaded = Speakers.isDownloaded
     }
 
     func deleteParakeet() {

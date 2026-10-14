@@ -181,12 +181,22 @@
         }
       }
     },
+    "Downloaded" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скачано"
+          }
+        }
+      }
+    },
     "Downloaded — %@" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Скачан — %@"
+            "value" : "Скачано — %@"
           }
         }
       }
@@ -296,7 +306,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не скачан"
+            "value" : "Не скачано"
           }
         }
       }
@@ -461,6 +471,16 @@
         }
       }
     },
+    "Speakers" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Голоса"
+          }
+        }
+      }
+    },
     "Starting…" : {
       "localizations" : {
         "ru" : {
@@ -487,6 +507,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Системная"
+          }
+        }
+      }
+    },
+    "Tells voices apart for apps that ask who said what, like Reprise with several people on a call. 22 MB, on the Neural Engine." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Различает голоса для приложений, которым нужно знать, кто что сказал: например, Reprise, когда на звонке несколько собеседников. 22 МБ, работает на Neural Engine."
           }
         }
       }

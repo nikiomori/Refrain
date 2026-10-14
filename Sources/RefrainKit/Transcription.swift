@@ -14,11 +14,14 @@ public struct Transcript: Sendable, Equatable {
         public var start: TimeInterval
         public var end: TimeInterval
         public var text: String
+        /// "A", "B"… when the voices were told apart.
+        public var speaker: String?
 
-        public init(start: TimeInterval, end: TimeInterval, text: String) {
+        public init(start: TimeInterval, end: TimeInterval, text: String, speaker: String? = nil) {
             self.start = start
             self.end = end
             self.text = text
+            self.speaker = speaker
         }
     }
 
@@ -43,12 +46,14 @@ public enum TranscriptionError: LocalizedError {
     case unsupportedSystem
     case unsupportedLanguage(String)
     case unreadableAudio
+    case noSpeakerModel
 
     public var errorDescription: String? {
         switch self {
         case .unsupportedSystem: "Transcription needs macOS 26 or later."
         case .unsupportedLanguage(let code): "No speech model on this Mac knows the language “\(code)”."
         case .unreadableAudio: "The file isn't audio that macOS can read (m4a, mp3, wav, caf, mp4…)."
+        case .noSpeakerModel: "Telling voices apart needs the speaker model: download it in Refrain's Settings, under Models."
         }
     }
 }
@@ -74,9 +79,10 @@ public enum Transcription {
     }
 
     /// Transcribe `file`. `keywords` are spellings to listen for, ahead of the names in `prompt`.
+    /// With `speakers`, each segment says which voice it is, told apart while the words are heard.
     /// `progress` gets the seconds of audio done so far and the file's length.
     @available(macOS 26.0, *)
-    public static func transcribe(file: URL, language: String?, prompt: String?, keywords: [String] = [],
+    public static func transcribe(file: URL, language: String?, prompt: String?, keywords: [String] = [], speakers: Bool = false,
                                   progress: @escaping @Sendable (_ done: TimeInterval, _ total: TimeInterval) -> Void = { _, _ in }
     ) async throws -> Transcript {
         guard SpeechTranscriber.isAvailable else { throw TranscriptionError.unsupportedSystem }
@@ -87,6 +93,8 @@ public enum Transcription {
         guard let engine = await engine(for: language) else {
             throw TranscriptionError.unsupportedLanguage(language ?? Locale.current.identifier)
         }
+        guard !speakers || Speakers.isDownloaded else { throw TranscriptionError.noSpeakerModel }
+        async let turns = speakers ? Speakers.turns(in: file) : []
         let started = ContinuousClock.now
         progress(0, duration)
         let progress: @Sendable (TimeInterval) -> Void = { progress(min($0, duration), duration) }
@@ -100,6 +108,7 @@ public enum Transcription {
                                                                     hints: hints(keywords: keywords, prompt: prompt), progress: progress)
         }
         text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if speakers { segments = Speakers.phrases(words, turns: try await turns) }
         if segments.isEmpty, !text.isEmpty { segments = [.init(start: 0, end: duration, text: text)] }
         // Durations only: the words never reach the log.
         let name = switch engine {
@@ -255,12 +264,16 @@ public enum Transcription {
                             pieces.text += said
                             let trimmed = said.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { continue }
-                            pieces.segments.append(.init(start: range.start.seconds, end: range.end.seconds, text: trimmed))
-                            for run in attributed.runs {
-                                guard let time = run.audioTimeRange else { continue }
+                            let words = attributed.runs.compactMap { run -> Transcript.Segment? in
+                                guard let time = run.audioTimeRange else { return nil }
                                 let word = String(attributed[run.range].characters).trimmingCharacters(in: .whitespacesAndNewlines)
-                                if !word.isEmpty { pieces.words.append(.init(start: time.start.seconds, end: time.end.seconds, text: word)) }
+                                return word.isEmpty ? nil : .init(start: time.start.seconds, end: time.end.seconds, text: word)
                             }
+                            pieces.words += words
+                            // From its first word to its last: a result's own range runs on through
+                            // the silence after it, up to the next one.
+                            pieces.segments.append(.init(start: words.first?.start ?? range.start.seconds,
+                                                         end: words.last?.end ?? range.end.seconds, text: trimmed))
                         }
                         return pieces
                     }

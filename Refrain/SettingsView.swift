@@ -144,6 +144,16 @@ private struct ModelSettings: View {
             }
 
             Section {
+                LabeledContent("Speakers") { SpeakersState(model: model) }
+                if let error = model.speakersError {
+                    Text(error).foregroundStyle(.red)
+                }
+            } footer: {
+                Text("Tells voices apart for apps that ask who said what, like Reprise with several people on a call. 22 MB, on the Neural Engine.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 LabeledContent("Apple Dictation", value: String(localized: "System"))
             } footer: {
                 Text("Every other language macOS can dictate.")
@@ -161,6 +171,27 @@ private struct ModelSettings: View {
         codes.compactMap { Locale.current.localizedString(forLanguageCode: $0) }
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
             .formatted(.list(type: .and))
+    }
+}
+
+private struct SpeakersState: View {
+    let model: AppModel
+
+    var body: some View {
+        HStack {
+            if model.downloadingSpeakers {
+                ProgressView().controlSize(.small)
+            } else if model.speakersDownloaded {
+                Text("Downloaded")
+                Button("Delete", role: .destructive, action: model.deleteSpeakers)
+                    .disabled(model.queued > 0)
+            } else {
+                Text("Not downloaded")
+                Button("Download", action: model.downloadSpeakers)
+            }
+        }
+        .fixedSize()
+        .accessibilityElement(children: .contain)
     }
 }
 

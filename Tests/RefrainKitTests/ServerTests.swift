@@ -15,7 +15,7 @@ import Testing
         let seen = seen
         server = try Server(port: 0, transcribe: { request in
             await seen.record(request)
-            return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.")],
+            return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.", speaker: "B")],
                               words: [.init(start: 0, end: 0.6, text: "Привет,"), .init(start: 0.7, end: 1.5, text: "мир.")],
                               language: "ru", duration: 1.5)
         }, onState: { ready.continuation.yield($0) })
@@ -56,6 +56,18 @@ import Testing
         let word = try #require((json["words"] as? [[String: Any]])?.last)
         #expect(word["word"] as? String == "мир.")
         #expect(word["start"] as? Double == 0.7)
+    }
+
+    /// OpenAI's shape for gpt-4o-transcribe-diarize, which Reprise asks for on the others' side.
+    @Test func diarizedJSON() async throws {
+        let (status, body) = try await send(upload(Data([1]), fields: [("response_format", "diarized_json"), ("chunking_strategy", "auto")]))
+        #expect(status == 200)
+        #expect(await seen.request?.speakers == true)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let segment = try #require((json["segments"] as? [[String: Any]])?.first)
+        #expect(segment["type"] as? String == "transcript.text.segment")
+        #expect(segment["speaker"] as? String == "B")
+        #expect(segment["text"] as? String == "Привет, мир.")
     }
 
     @Test func subtitles() async throws {
