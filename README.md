@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="The Refrain icon: the breath mark from sheet music">
+  <img src="docs/icon.png" width="128" alt="The Refrain icon: a sound wave">
 </p>
 
 <h1 align="center">Refrain</h1>
