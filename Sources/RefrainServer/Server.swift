@@ -8,11 +8,20 @@ public struct TranscriptionRequest: Sendable {
     public var file: URL
     public var language: String?
     public var prompt: String?
+    /// Spellings to listen for, ahead of the names in `prompt`.
+    public var keywords: [String] = []
+
+    public init(file: URL, language: String?, prompt: String?, keywords: [String] = []) {
+        self.file = file
+        self.language = language
+        self.prompt = prompt
+        self.keywords = keywords
+    }
 }
 
 /// The OpenAI-compatible endpoint on 127.0.0.1, one HTTP/1.1 request per connection.
 ///
-/// Web pages are kept out (docs/PLAN.md 3.2): only the loopback address listens, `Host` must
+/// Web pages are kept out: only the loopback address listens, `Host` must
 /// name it (no DNS rebinding), a browser's `Origin` is refused, and there are no CORS headers.
 /// Native clients and Electron (`app://`) send neither.
 public final class Server: @unchecked Sendable {
@@ -130,14 +139,16 @@ public final class Server: @unchecked Sendable {
         let form = try Multipart(body: body, boundary: boundary, fileDirectory: Self.uploads)
         defer { form.file.map { try? FileManager.default.removeItem(at: $0) } }
         guard let file = form.file else { throw HTTPError(400, "The request has no `file`.") }
-        let format = form.fields["response_format"] ?? "json"
-        guard ["json", "text", "verbose_json"].contains(format) else {
-            throw HTTPError(400, "response_format must be json, text or verbose_json.")
+        let format = form["response_format"] ?? "json"
+        guard ["json", "text", "verbose_json", "srt", "vtt"].contains(format) else {
+            throw HTTPError(400, "response_format must be json, text, verbose_json, srt or vtt.")
         }
+        // `languages[]` and `keywords[]` are what OpenAI's gpt-transcribe takes; the first language picks the engine.
+        let language = form["language"] ?? form.list("languages").first
 
         let transcript: Transcript
         do {
-            transcript = try await transcribe(.init(file: file, language: form.fields["language"], prompt: form.fields["prompt"]))
+            transcript = try await transcribe(.init(file: file, language: language, prompt: form["prompt"], keywords: form.list("keywords")))
         } catch let error as TranscriptionError {
             if case .unsupportedSystem = error { throw HTTPError(500, error.localizedDescription) }
             throw HTTPError(400, error.localizedDescription)
@@ -145,8 +156,13 @@ public final class Server: @unchecked Sendable {
             throw HTTPError(500, error.localizedDescription)
         }
         switch format {
-        case "text": return Response(status: 200, type: "text/plain; charset=utf-8", body: Data((transcript.text + "\n").utf8))
-        case "verbose_json": return .json(Verbose(transcript))
+        case "text": return .text(transcript.text + "\n")
+        case "srt": return .text(Subtitles.srt(transcript.segments))
+        case "vtt": return .text(Subtitles.vtt(transcript.segments), type: "text/vtt")
+        case "verbose_json":
+            let granularities = Set(form.list("timestamp_granularities"))
+            return .json(Verbose(transcript, segments: granularities.isEmpty || granularities.contains("segment"),
+                                 words: granularities.contains("word")))
         default: return .json(["text": transcript.text])
         }
     }
@@ -171,9 +187,11 @@ struct Head {
     }
 
     /// `Host` names this server, so a rebound DNS name can't reach it, and no browser `Origin`
-    /// (`null` is a sandboxed frame or a local file).
+    /// (`null` is a sandboxed frame or a local file). `host.docker.internal` is how Docker Desktop
+    /// reaches the Mac (Open WebUI, LibreChat); `.internal` never resolves publicly, so no page can rebind it.
     func check(port: UInt16) throws {
-        guard let host = headers["host"]?.lowercased(), ["127.0.0.1:\(port)", "localhost:\(port)"].contains(host) else {
+        guard let host = headers["host"]?.lowercased(),
+              ["127.0.0.1:\(port)", "localhost:\(port)", "host.docker.internal:\(port)"].contains(host) else {
             throw HTTPError(403, "Use http://127.0.0.1:\(port)/v1.")
         }
         if let origin = headers["origin"]?.lowercased(),
@@ -207,6 +225,10 @@ struct Response {
         Response(status: 200, type: "application/json", body: Data(text.utf8))
     }
 
+    static func text(_ text: String, type: String = "text/plain") -> Response {
+        Response(status: 200, type: "\(type); charset=utf-8", body: Data(text.utf8))
+    }
+
     /// OpenAI's error shape, which clients already know how to show.
     static func error(_ status: Int, _ message: String) -> Response {
         let type = status >= 500 ? "server_error" : "invalid_request_error"
@@ -225,7 +247,7 @@ struct Response {
     }
 }
 
-/// `verbose_json` as OpenAI writes it, segment timestamps only (words come in 0.2).
+/// `verbose_json` as OpenAI writes it: segments unless only words were asked for, words if asked for.
 struct Verbose: Encodable {
     struct Segment: Encodable {
         var id: Int
@@ -234,18 +256,45 @@ struct Verbose: Encodable {
         var text: String
     }
 
+    struct Word: Encodable {
+        var word: String
+        var start: Double
+        var end: Double
+    }
+
     var task = "transcribe"
     /// OpenAI names the language in English ("russian"), not by code.
     var language: String?
     var duration: Double
     var text: String
-    var segments: [Segment]
+    var segments: [Segment]?
+    var words: [Word]?
 
-    init(_ transcript: Transcript) {
+    init(_ transcript: Transcript, segments: Bool = true, words: Bool = false) {
         language = transcript.language.flatMap { Locale(identifier: "en").localizedString(forLanguageCode: $0)?.lowercased() }
         duration = transcript.duration
         text = transcript.text
-        segments = transcript.segments.enumerated().map { .init(id: $0, start: $1.start, end: $1.end, text: $1.text) }
+        if segments {
+            self.segments = transcript.segments.enumerated().map { .init(id: $0, start: $1.start, end: $1.end, text: $1.text) }
+        }
+        if words { self.words = transcript.words.map { .init(word: $0.text, start: $0.start, end: $0.end) } }
+    }
+}
+
+/// SubRip and WebVTT, one cue per segment.
+enum Subtitles {
+    static func srt(_ segments: [Transcript.Segment]) -> String {
+        segments.enumerated().map { "\($0 + 1)\n\(time($1.start, ",")) --> \(time($1.end, ","))\n\($1.text)\n\n" }.joined()
+    }
+
+    static func vtt(_ segments: [Transcript.Segment]) -> String {
+        "WEBVTT\n\n" + segments.map { "\(time($0.start, ".")) --> \(time($0.end, "."))\n\($0.text)\n\n" }.joined()
+    }
+
+    /// 01:02:03,456 — SubRip separates the milliseconds with a comma, WebVTT with a dot.
+    static func time(_ seconds: Double, _ separator: String) -> String {
+        let ms = Int((seconds * 1000).rounded())
+        return String(format: "%02d:%02d:%02d%@%03d", ms / 3_600_000, ms / 60_000 % 60, ms / 1000 % 60, separator, ms % 1000)
     }
 }
 

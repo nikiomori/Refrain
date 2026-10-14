@@ -8,21 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		068986B6DD4824F463CA567E /* RefrainKit in Frameworks */ = {isa = PBXBuildFile; productRef = C081CB534DE3A6F7632EFE1F /* RefrainKit */; };
+		1D062F039C2931ED5092AD17 /* TranscribeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D5DAC67D7484DBD717D88F /* TranscribeIntent.swift */; };
 		47497B9E8349EC870ECD65D8 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D1E52A44B91F556D155AD810 /* Localizable.xcstrings */; };
 		59F4B25127B3AD37002F0D56 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 637C13C521279E1E953759B8 /* SettingsView.swift */; };
 		5AEB0E8DE81CE8E5E0B18127 /* RefrainServer in Frameworks */ = {isa = PBXBuildFile; productRef = 157AD9A1663020E6E9430BAB /* RefrainServer */; };
 		65C121F7C36EEC86A364F5E1 /* RefrainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323EE87D93EE14F01718CD91 /* RefrainApp.swift */; };
+		66BFCBE918317DA4A04A48CA /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3182C1979C4E121F53AFA811 /* AppShortcuts.xcstrings */; };
 		74FAF1C2D4802CB597FC87BD /* DebugSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2653C570484B581FCF54A73 /* DebugSnapshots.swift */; };
 		7EF580487DB33E3D4C785092 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44783DF23B195626C4D3F6BF /* WelcomeView.swift */; };
 		993167D86CAD2EE8DEF64D42 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 35BFDB87C26C441F5DC72086 /* LICENSE */; };
 		C7B50A7469AB1561CFCFEA11 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */; };
 		CD8D2F43C872E45D81F7E10B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C739E9E7AE66EABC811C94 /* AppModel.swift */; };
 		E26A1B5A06A5CE1889EB6C90 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 52F2F7D1FCDEFFCE3FA5A59D /* AppIcon.icon */; };
+		EF05A0393A84B047986AAA66 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF39CE9513805DD615FB310 /* Updater.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		18A3DCCC2318B99A2457D559 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		317E8DCD93492EDD46319DE4 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		3182C1979C4E121F53AFA811 /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
 		323EE87D93EE14F01718CD91 /* RefrainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefrainApp.swift; sourceTree = "<group>"; };
 		34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		35BFDB87C26C441F5DC72086 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
@@ -31,7 +35,9 @@
 		637C13C521279E1E953759B8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8577B1F9B251E121BDF4EE00 /* whisper */ = {isa = PBXFileReference; lastKnownFileType = folder; name = whisper; path = .; sourceTree = SOURCE_ROOT; };
 		C0C739E9E7AE66EABC811C94 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C2D5DAC67D7484DBD717D88F /* TranscribeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscribeIntent.swift; sourceTree = "<group>"; };
 		D1E52A44B91F556D155AD810 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		EBF39CE9513805DD615FB310 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		F2653C570484B581FCF54A73 /* DebugSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSnapshots.swift; sourceTree = "<group>"; };
 		F77D7669DBD76EE0337D706C /* Refrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Refrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -81,11 +87,14 @@
 			isa = PBXGroup;
 			children = (
 				C0C739E9E7AE66EABC811C94 /* AppModel.swift */,
+				3182C1979C4E121F53AFA811 /* AppShortcuts.xcstrings */,
 				F2653C570484B581FCF54A73 /* DebugSnapshots.swift */,
 				18A3DCCC2318B99A2457D559 /* Info.plist */,
 				D1E52A44B91F556D155AD810 /* Localizable.xcstrings */,
 				323EE87D93EE14F01718CD91 /* RefrainApp.swift */,
 				637C13C521279E1E953759B8 /* SettingsView.swift */,
+				C2D5DAC67D7484DBD717D88F /* TranscribeIntent.swift */,
+				EBF39CE9513805DD615FB310 /* Updater.swift */,
 				44783DF23B195626C4D3F6BF /* WelcomeView.swift */,
 				4330CBBACD3E096FD00FDC26 /* Resources */,
 			);
@@ -176,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E26A1B5A06A5CE1889EB6C90 /* AppIcon.icon in Resources */,
+				66BFCBE918317DA4A04A48CA /* AppShortcuts.xcstrings in Resources */,
 				993167D86CAD2EE8DEF64D42 /* LICENSE in Resources */,
 				47497B9E8349EC870ECD65D8 /* Localizable.xcstrings in Resources */,
 				C7B50A7469AB1561CFCFEA11 /* THIRD_PARTY_NOTICES.md in Resources */,
@@ -193,6 +203,8 @@
 				74FAF1C2D4802CB597FC87BD /* DebugSnapshots.swift in Sources */,
 				65C121F7C36EEC86A364F5E1 /* RefrainApp.swift in Sources */,
 				59F4B25127B3AD37002F0D56 /* SettingsView.swift in Sources */,
+				1D062F039C2931ED5092AD17 /* TranscribeIntent.swift in Sources */,
+				EF05A0393A84B047986AAA66 /* Updater.swift in Sources */,
 				7EF580487DB33E3D4C785092 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

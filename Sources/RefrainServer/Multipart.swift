@@ -4,8 +4,16 @@ import Foundation
 /// part is copied out to a file of its own, keeping the client's extension, which AVFoundation
 /// goes by. The body is memory-mapped, so a long recording is never loaded whole.
 struct Multipart {
-    var fields: [String: String] = [:]
+    /// In order, repeats kept: lists come as one field per item.
+    var fields: [(name: String, value: String)] = []
     var file: URL?
+
+    subscript(name: String) -> String? { fields.first { $0.name == name }?.value }
+
+    /// A list, sent as repeated `name[]` (OpenAI's SDKs) or `name`.
+    func list(_ name: String) -> [String] {
+        fields.filter { $0.name == name || $0.name == name + "[]" }.map(\.value)
+    }
 
     static func boundary(in contentType: String) -> String? {
         guard contentType.lowercased().hasPrefix("multipart/form-data") else { return nil }
@@ -36,7 +44,7 @@ struct Multipart {
     private mutating func take(headers: String, content: UnsafeRawBufferPointer, fileDirectory: URL) throws {
         guard let name = headers.firstMatch(of: #/;\s*name="([^"]*)"/#)?.1 else { return }
         guard name == "file" else {
-            fields[String(name)] = String(decoding: content, as: UTF8.self)
+            fields.append((String(name), String(decoding: content, as: UTF8.self)))
             return
         }
         guard file == nil else { return }  // one file per request; a second would be left on disk

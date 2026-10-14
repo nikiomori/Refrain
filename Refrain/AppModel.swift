@@ -37,6 +37,23 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private init() {
         try? FileManager.default.removeItem(at: Server.uploads)
         listen()
+        warmUp()
+    }
+
+    /// After an update of macOS the Neural Engine compiles Parakeet anew, ~11 s: done now, in
+    /// the background, rather than in the first request. Also right after the download.
+    private func warmUp() {
+        let system = ProcessInfo.processInfo.operatingSystemVersionString
+        guard Parakeet.isDownloaded, UserDefaults.standard.string(forKey: "warmedUpOn") != system else { return }
+        Task(priority: .background) {
+            do {
+                try await Parakeet.warmUp()
+                UserDefaults.standard.set(system, forKey: "warmedUpOn")
+                log.notice("Parakeet compiled for \(system, privacy: .public)")
+            } catch {
+                log.error("Parakeet warm-up: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
     /// Never another port on its own: clients have this one written in their settings.
@@ -80,7 +97,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     }
 
     /// One at a time, in order: the Neural Engine does one file faster than two at once.
-    private func transcribe(_ request: TranscriptionRequest) async throws -> Transcript {
+    /// From the server and from Shortcuts alike.
+    func transcribe(_ request: TranscriptionRequest) async throws -> Transcript {
         let previous = tail
         let job = Task {
             await previous?.value
@@ -91,7 +109,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                 if case .transcribing = status { status = .ready }
             }
             return try await Transcription.transcribe(file: request.file, language: request.language,
-                                                      prompt: request.prompt) { done, total in
+                                                      prompt: request.prompt, keywords: request.keywords) { done, total in
                 Task { @MainActor in
                     // Late reports of a finished file don't bring its status back.
                     if AppModel.shared.running == id { AppModel.shared.status = .transcribing(done: done, of: total) }
@@ -120,6 +138,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             }
             downloading = nil
             parakeetDownloaded = Parakeet.isDownloaded
+            warmUp()
         }
     }
 

@@ -16,6 +16,7 @@ import Testing
         server = try Server(port: 0, transcribe: { request in
             await seen.record(request)
             return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.")],
+                              words: [.init(start: 0, end: 0.6, text: "Привет,"), .init(start: 0.7, end: 1.5, text: "мир.")],
                               language: "ru", duration: 1.5)
         }, onState: { ready.continuation.yield($0) })
         for await state in ready.stream { #expect(state == .ready); break }
@@ -23,7 +24,7 @@ import Testing
 
     @Test func transcribesAMultipartUpload() async throws {
         let audio = Data((0..<100_000).map { UInt8($0 % 251) })
-        let (status, body) = try await send(upload(audio, fields: ["language": "ru", "prompt": "Звонок с Дубиной"]))
+        let (status, body) = try await send(upload(audio, fields: [("language", "ru"), ("prompt", "Звонок с Дубиной")]))
         #expect(status == 200)
         #expect(String(decoding: body, as: UTF8.self) == #"{"text":"Привет, мир."}"#)
         let request = try #require(await seen.request)
@@ -36,7 +37,7 @@ import Testing
     }
 
     @Test func verboseJSON() async throws {
-        let (status, body) = try await send(upload(Data([1, 2, 3]), fields: ["response_format": "verbose_json"]))
+        let (status, body) = try await send(upload(Data([1, 2, 3]), fields: [("response_format", "verbose_json")]))
         #expect(status == 200)
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         #expect(json["language"] as? String == "russian")
@@ -46,8 +47,36 @@ import Testing
         #expect(segment["text"] as? String == "Привет, мир.")
     }
 
+    @Test func wordsWhenAskedFor() async throws {
+        let (_, body) = try await send(upload(Data([1]), fields: [("response_format", "verbose_json"),
+                                                                   ("timestamp_granularities[]", "word")]))
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        // Only words were asked for, as OpenAI answers it.
+        #expect(json["segments"] == nil)
+        let word = try #require((json["words"] as? [[String: Any]])?.last)
+        #expect(word["word"] as? String == "мир.")
+        #expect(word["start"] as? Double == 0.7)
+    }
+
+    @Test func subtitles() async throws {
+        let (_, srt) = try await send(upload(Data([1]), fields: [("response_format", "srt")]))
+        #expect(String(decoding: srt, as: UTF8.self) == "1\n00:00:00,000 --> 00:00:01,500\nПривет, мир.\n\n")
+        let (_, vtt) = try await send(upload(Data([1]), fields: [("response_format", "vtt")]))
+        #expect(String(decoding: vtt, as: UTF8.self) == "WEBVTT\n\n00:00:00.000 --> 00:00:01.500\nПривет, мир.\n\n")
+        #expect(Subtitles.time(3723.4567, ",") == "01:02:03,457")
+    }
+
+    /// gpt-transcribe's lists: the first language picks the engine, keywords go to it as given.
+    @Test func languagesAndKeywordsLists() async throws {
+        _ = try await send(upload(Data([1]), fields: [("languages[]", "uk"), ("languages[]", "ru"),
+                                                       ("keywords[]", "Refrain"), ("keywords[]", "Дубина")]))
+        let request = try #require(await seen.request)
+        #expect(request.language == "uk")
+        #expect(request.keywords == ["Refrain", "Дубина"])
+    }
+
     @Test func plainText() async throws {
-        let (status, body) = try await send(upload(Data([1]), fields: ["response_format": "text"]))
+        let (status, body) = try await send(upload(Data([1]), fields: [("response_format", "text")]))
         #expect(status == 200)
         #expect(String(decoding: body, as: UTF8.self) == "Привет, мир.\n")
     }
@@ -63,24 +92,30 @@ import Testing
         #expect(status == 403)
     }
 
+    /// Open WebUI and LibreChat in Docker Desktop reach the Mac by this name.
+    @Test func acceptsDocker() async throws {
+        let (status, _) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: host.docker.internal:\(server.port)\r\n\r\n".utf8))
+        #expect(status == 200)
+    }
+
     @Test func refusesWebPages() async throws {
         for origin in ["https://evil.example", "http://localhost:3000", "null"] {
-            let (status, _) = try await send(upload(Data([1]), fields: [:], extraHeaders: "Origin: \(origin)\r\n"))
+            let (status, _) = try await send(upload(Data([1]), fields: [], extraHeaders: "Origin: \(origin)\r\n"))
             #expect(status == 403)
         }
-        let (status, _) = try await send(upload(Data([1]), fields: [:], extraHeaders: "Origin: app://obsidian.md\r\n"))
+        let (status, _) = try await send(upload(Data([1]), fields: [], extraHeaders: "Origin: app://obsidian.md\r\n"))
         #expect(status == 200)
     }
 
     @Test func answersExpectContinue() async throws {
-        let (status, _) = try await send(upload(Data([1]), fields: [:], extraHeaders: "Expect: 100-continue\r\n"))
+        let (status, _) = try await send(upload(Data([1]), fields: [], extraHeaders: "Expect: 100-continue\r\n"))
         #expect(status == 200)
     }
 
-    private func upload(_ audio: Data, fields: [String: String], extraHeaders: String = "") -> Data {
+    private func upload(_ audio: Data, fields: [(String, String)], extraHeaders: String = "") -> Data {
         let boundary = "----test\(UUID().uuidString)"
         var body = Data()
-        for (name, value) in fields.sorted(by: { $0.key < $1.key }) {
+        for (name, value) in fields {
             body += Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8)
         }
         body += Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"call.wav\"\r\nContent-Type: audio/wav\r\n\r\n".utf8)

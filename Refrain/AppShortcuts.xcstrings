@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Transcribe an audio file with ${applicationName}" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расшифровать аудиофайл в ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

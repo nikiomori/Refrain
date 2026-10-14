@@ -35,6 +35,17 @@ private struct MenuContent: View {
         Text(model.address)
         Button("Copy Address", action: model.copyAddress)
         Divider()
+        switch Updater.shared.state {
+        case .available(let release), .failed(_, let release?):
+            Button("Update to Refrain \(release.version)") { Updater.shared.install(release) }
+                .disabled(model.queued > 0)
+            Divider()
+        case .installing:
+            Text("Installing the Update…")
+            Divider()
+        default:
+            EmptyView()
+        }
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
         Button("Quit Refrain") { NSApp.terminate(nil) }
@@ -61,7 +72,9 @@ private struct MenuBarIcon: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: [Updater.autoKey: true])
         _ = AppModel.shared
+        _ = Updater.shared
         #if DEBUG
         DebugSnapshots.runIfRequested()
         #endif

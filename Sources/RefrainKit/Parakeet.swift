@@ -45,8 +45,15 @@ public enum Parakeet {
         AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: version), version: version)
     }
 
+    /// Loads the model once, so the first request after an update of macOS doesn't wait
+    /// ~11 s for the Neural Engine to compile it. It unloads on its own, as after a request.
+    public static func warmUp() async throws {
+        _ = try await loader.acquire()
+        await loader.release()
+    }
+
     static func transcribe(file: URL, duration: TimeInterval, language: String?,
-                           progress: @escaping @Sendable (TimeInterval) -> Void) async throws -> (String, [Transcript.Segment]) {
+                           progress: @escaping @Sendable (TimeInterval) -> Void) async throws -> Transcription.Pieces {
         let manager = try await loader.acquire()
         defer { Task { await loader.release() } }
         let hint = language.flatMap(Language.init(rawValue:))
@@ -66,7 +73,8 @@ public enum Parakeet {
             defer { watcher.cancel() }
             result = try await manager.transcribe(file, decoderState: &state, language: hint)
         }
-        return (result.text, segments(from: buildWordTimings(from: result.tokenTimings ?? [])))
+        let words = buildWordTimings(from: result.tokenTimings ?? [])
+        return (result.text, segments(from: words), words.map { .init(start: $0.startTime, end: $0.endTime, text: $0.word) })
     }
 
     /// Sentences, as Parakeet punctuates them; a pause of a second or 30 s without a full stop
@@ -92,9 +100,10 @@ public enum Parakeet {
 
     /// Loaded on the first request, unloaded after five idle minutes. Counted, so a
     /// `release` that arrives late can't start the idle clock under a transcription in progress.
-    /// ponytail: no single-flight — the app runs one request at a time; add one if that changes.
+    /// Loaded once however many ask at a time (a warm-up and a request).
     private actor Loader {
         private var manager: AsrManager?
+        private var loading: Task<AsrManager, Error>?
         private var users = 0
         private var idle: Task<Void, Never>?
 
@@ -102,14 +111,21 @@ public enum Parakeet {
             users += 1
             idle?.cancel()
             if let manager { return manager }
-            do {
+            let loading = self.loading ?? Task {
                 let version: AsrModelVersion = Parakeet.exists(.ultra) ? .ultra : .v3
                 let models = try await AsrModels.load(from: AsrModels.defaultCacheDirectory(for: version), version: version)
                 let manager = AsrManager(config: .default)
                 try await manager.loadModels(models)
+                return manager
+            }
+            self.loading = loading
+            do {
+                let manager = try await loading.value
                 self.manager = manager
+                self.loading = nil
                 return manager
             } catch {
+                self.loading = nil
                 users -= 1
                 throw error
             }
