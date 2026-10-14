@@ -35,17 +35,6 @@ private struct MenuContent: View {
         Text(model.address)
         Button("Copy Address", action: model.copyAddress)
         Divider()
-        switch Updater.shared.state {
-        case .available(let release), .failed(_, let release?):
-            Button("Update to Refrain \(release.version)") { Updater.shared.install(release) }
-                .disabled(model.queued > 0)
-            Divider()
-        case .installing:
-            Text("Installing the Update…")
-            Divider()
-        default:
-            EmptyView()
-        }
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
         Button("Quit Refrain") { NSApp.terminate(nil) }
@@ -53,18 +42,16 @@ private struct MenuContent: View {
     }
 }
 
-/// Always in the menu bar, so it also opens windows for AppKit (a second launch from Finder).
+/// Always in the menu bar, so it also opens Settings for AppKit (a second launch from Finder).
 private struct MenuBarIcon: View {
     let model: AppModel
     @Environment(\.openSettings) private var openSettings
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let working = if case .transcribing = model.status { true } else { false }
         Image(nsImage: .refrainGlyph(working: working))
-            .onReceive(NotificationCenter.default.publisher(for: .openRefrainWindow)) { note in
-                let id = note.object as? String ?? "settings"
-                id == "settings" ? openSettings() : openWindow(id: id)
+            .onReceive(NotificationCenter.default.publisher(for: .openRefrainSettings)) { _ in
+                openSettings()
                 NSApp.activate()
             }
     }
@@ -72,25 +59,19 @@ private struct MenuBarIcon: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        UserDefaults.standard.register(defaults: [Updater.autoKey: true])
         _ = AppModel.shared
-        _ = Updater.shared
-        #if DEBUG
-        DebugSnapshots.runIfRequested()
-        #endif
     }
 
     /// Opened again from Finder or Spotlight: the menu bar item may be out of reach (behind
     /// the notch, or hidden), so show Settings.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        NotificationCenter.default.post(name: .openRefrainWindow, object: "settings")
+        NotificationCenter.default.post(name: .openRefrainSettings, object: nil)
         return true
     }
 }
 
 extension Notification.Name {
-    /// Object: a window ID, "settings" or "welcome".
-    static let openRefrainWindow = Notification.Name("openRefrainWindow")
+    static let openRefrainSettings = Notification.Name("openRefrainSettings")
 }
 
 extension NSColor {

@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "Refrain",
     // macOS 14, not 26: Pretype still runs on 14 and links RefrainKit. What needs 26
-    // (Apple's SpeechAnalyzer) is gated with `@available` inside.
+    // (Apple's SpeechAnalyzer, the server's async Network API) is gated with `@available` inside.
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "RefrainKit", targets: ["RefrainKit"]),

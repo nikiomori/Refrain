@@ -71,36 +71,6 @@
         }
       }
     },
-    "Check Now" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проверить"
-          }
-        }
-      }
-    },
-    "Check for updates automatically" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Автоматически проверять обновления"
-          }
-        }
-      }
-    },
-    "Checking…" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проверка…"
-          }
-        }
-      }
-    },
     "Choose a port from 1024 to 65535." : {
       "localizations" : {
         "ru" : {
@@ -127,16 +97,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Скопировать адрес"
-          }
-        }
-      }
-    },
-    "Couldn't unpack the update." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Не удалось распаковать обновление."
           }
         }
       }
@@ -241,46 +201,6 @@
         }
       }
     },
-    "GitHub answered %lld. Try again later." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub ответил с кодом %lld. Повторите попытку позже."
-          }
-        }
-      }
-    },
-    "Install and Relaunch" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Установить и перезапустить"
-          }
-        }
-      }
-    },
-    "Installing the Update…" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Установка обновления…"
-          }
-        }
-      }
-    },
-    "Installing the update…" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Установка обновления…"
-          }
-        }
-      }
-    },
     "Language" : {
       "localizations" : {
         "ru" : {
@@ -307,16 +227,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Не скачано"
-          }
-        }
-      }
-    },
-    "Open GitHub" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть GitHub"
           }
         }
       }
@@ -401,42 +311,12 @@
         }
       }
     },
-    "Refrain %@" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refrain %@"
-          }
-        }
-      }
-    },
-    "Refrain %@ is available" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Доступна версия Refrain %@"
-          }
-        }
-      }
-    },
     "Refrain is your Mac's hearing" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Refrain — слух вашего Mac"
-          }
-        }
-      }
-    },
-    "Refrain relaunches when it's done." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refrain перезапустится, когда закончит."
           }
         }
       }
@@ -521,46 +401,6 @@
         }
       }
     },
-    "The download doesn't have the signature of this copy of Refrain. Download the update from GitHub." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "У загрузки не та подпись, что у этой копии Refrain. Скачайте обновление с GitHub."
-          }
-        }
-      }
-    },
-    "The download failed. Try again later." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Загрузка не удалась. Повторите попытку позже."
-          }
-        }
-      }
-    },
-    "This is the latest version." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Это последняя версия."
-          }
-        }
-      }
-    },
-    "This release has no app to download." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "В этом выпуске нет приложения для загрузки."
-          }
-        }
-      }
-    },
     "Transcribe ${file}" : {
       "localizations" : {
         "ru" : {
@@ -601,16 +441,6 @@
         }
       }
     },
-    "Try Again" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Повторить"
-          }
-        }
-      }
-    },
     "Turns the speech in an audio or video file into text, on this Mac." : {
       "localizations" : {
         "ru" : {
@@ -621,72 +451,12 @@
         }
       }
     },
-    "Update to Refrain %@" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обновить до Refrain %@"
-          }
-        }
-      }
-    },
-    "Updates" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обновления"
-          }
-        }
-      }
-    },
-    "Wait for the transcription to finish, then install the update." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Дождитесь конца расшифровки и установите обновление."
-          }
-        }
-      }
-    },
     "Welcome to Refrain" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Добро пожаловать в Refrain"
-          }
-        }
-      }
-    },
-    "What's New" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Что нового"
-          }
-        }
-      }
-    },
-    "You can install it after the transcription." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Её можно установить после расшифровки."
-          }
-        }
-      }
-    },
-    "You have %@." : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "У вас версия %@."
           }
         }
       }

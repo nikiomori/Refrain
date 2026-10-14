@@ -94,7 +94,7 @@ Memory is the physical footprint, as Activity Monitor shows it. The app is 13 MB
 
 - Refrain listens on `127.0.0.1` only. `Host` must be `127.0.0.1` or `localhost` (no DNS rebinding), a request with a web page's `Origin` is refused, and there are no CORS headers: web pages can't use it.
 - The upload goes to a temporary file that is deleted once the response is sent; whatever a crash leaves behind is deleted at the next launch. No text is stored or logged: the log holds durations and processing times.
-- The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them, and a check for updates on GitHub once a day, which Settings can turn off. Apple's language packs are downloaded by macOS.
+- The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them. Apple's language packs are downloaded by macOS.
 
 ## Build
 
@@ -103,10 +103,9 @@ Xcode 27:
 ```sh
 open Refrain.xcodeproj          # or: xcodebuild -scheme Refrain build
 swift test                       # server and engine tests, no models needed
-xcodegen generate                # after editing project.yml (brew install xcodegen)
 ```
 
-`Package.swift` holds `RefrainKit` (engines, choice by language, timestamps) and `RefrainServer` (HTTP). The app in `Refrain/` is the menu bar and settings around them. To sign with your own team, put `DEVELOPMENT_TEAM` and `CODE_SIGN_IDENTITY` in `Config/Local.xcconfig`. The README's screenshots come from a Debug build: `open --env REFRAIN_SNAPSHOTS=<folder> Refrain.app` shows each window and the menu in light and dark mode, captures them and quits (it needs the Screen Recording permission).
+`Package.swift` holds `RefrainKit` (engines, choice by language, timestamps) and `RefrainServer` (HTTP). The app in `Refrain/` is the menu bar and settings around them. To sign with your own team, put `DEVELOPMENT_TEAM` and `CODE_SIGN_IDENTITY` in `Config/Local.xcconfig`.
 
 ## License
 

@@ -33,7 +33,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private(set) var port = UserDefaults.standard.object(forKey: "port") as? Int ?? defaultPort
     var address: String { "http://127.0.0.1:\(port)/v1" }
 
-    @ObservationIgnored private var server: Server?
+    @ObservationIgnored private var server: Task<Void, Never>?
     @ObservationIgnored private var tail: Task<Void, Never>?
     @ObservationIgnored private var running: UUID?
 
@@ -76,7 +76,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     }
 
     private func listen() {
-        server?.stop()
+        server?.cancel()
         server = nil
         status = .starting
         guard let port = UInt16(exactly: port), port >= 1024 else {
@@ -84,15 +84,16 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             return
         }
         do {
-            server = try Server(port: port, transcribe: { [self] request in try await transcribe(request) }, onState: { state in
+            let server = try Server(port: port, transcribe: { [self] request in try await transcribe(request) }, onState: { state in
                 Task { @MainActor in AppModel.shared.serverChanged(state, port: port) }
             })
+            self.server = Task { try? await server.run() }  // a failure reaches serverChanged too
         } catch {
             status = .failed(error.localizedDescription)
         }
     }
 
-    private func serverChanged(_ state: Server.State, port: UInt16) {
+    private func serverChanged(_ state: NetworkListener<TCP>.State, port: UInt16) {
         guard port == self.port else { return }  // a server already replaced
         switch state {
         case .ready:
@@ -103,6 +104,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                 ? String(localized: "Port \(String(port)) is used by another app.")
                 : error.localizedDescription)
             log.error("Can't listen on \(port): \(error.localizedDescription, privacy: .public)")
+        default:
+            break
         }
     }
 
@@ -159,10 +162,9 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         downloadingSpeakers = true
         speakersError = nil
         Task {
-            do { try await Speakers.download() } catch { speakersError = error.localizedDescription }
+            do { try await Speakers.warmUp() } catch { speakersError = error.localizedDescription }
             downloadingSpeakers = false
             speakersDownloaded = Speakers.isDownloaded
-            warmUp()
         }
     }
 
@@ -177,11 +179,6 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             parakeetDownloaded = Parakeet.isDownloaded
         }
     }
-
-    #if DEBUG
-    /// For DebugSnapshots: the menu as it looks mid-transcription.
-    func debugShow(_ status: Status) { self.status = status }
-    #endif
 
     func copyAddress() {
         NSPasteboard.general.clearContents()

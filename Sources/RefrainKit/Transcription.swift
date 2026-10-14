@@ -110,13 +110,14 @@ public enum Transcription {
         text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if speakers { segments = Speakers.phrases(words, turns: try await turns) }
         if segments.isEmpty, !text.isEmpty { segments = [.init(start: 0, end: duration, text: text)] }
-        // Durations only: the words never reach the log.
-        let name = switch engine {
-        case .parakeet(let code): "Parakeet, \(code ?? "auto")"
-        case .apple(let locale, let preferred): "\(preferred ? "SpeechTranscriber" : "DictationTranscriber"), \(locale.identifier)"
+        let (name, code): (String, String?) = switch engine {
+        case .parakeet(let code): ("Parakeet, \(code ?? "auto")", code)
+        case .apple(let locale, let preferred):
+            ("\(preferred ? "SpeechTranscriber" : "DictationTranscriber"), \(locale.identifier)", locale.language.languageCode?.identifier)
         }
+        // Durations only: the words never reach the log.
         log.notice("\(Int(duration)) s of audio in \(started.duration(to: .now), privacy: .public) (\(name, privacy: .public))")
-        return Transcript(text: text, segments: segments, words: words, language: Self.code(of: engine), duration: duration)
+        return Transcript(text: text, segments: segments, words: words, language: code, duration: duration)
     }
 
     /// `language` picks the engine. Without one: Parakeet if downloaded (it detects the language),
@@ -145,13 +146,6 @@ public enum Transcription {
         return Locale(identifier: requested.language.maximalIdentifier)
     }
 
-    private static func code(of engine: Engine) -> String? {
-        switch engine {
-        case .apple(let locale, _): locale.language.languageCode?.identifier
-        case .parakeet(let code): code
-        }
-    }
-
     /// The transcriber's own identifier for `locale` and which model serves it, or nil.
     @available(macOS 26.0, *)
     static func resolve(_ locale: Locale) async -> (locale: Locale, preferred: Bool)? {
@@ -164,12 +158,6 @@ public enum Transcription {
             return (canonical, false)
         }
         return nil
-    }
-
-    /// Languages Apple's newer `SpeechTranscriber` serves — what Settings lists for it.
-    @available(macOS 26.0, *)
-    public static var appleLocales: [Locale] {
-        get async { await SpeechTranscriber.supportedLocales }
     }
 
     /// What the engine listens for: `keywords` as given, then the names in `prompt`.
@@ -187,7 +175,7 @@ public enum Transcription {
     /// Sentence-initial capitals carry no signal. The prompt's own first word is not taken
     /// for a sentence start: clients send a tail cut mid-text (Reprise) or a list of names
     /// (Pretype's "Dubina, MLX"), where it is the likeliest name of all.
-    public static func biasWords(in text: String, limit: Int = 50) -> [String] {
+    public static func biasWords(in text: String) -> [String] {
         var picked: [String] = []
         for (index, line) in text.split(whereSeparator: \.isNewline).enumerated() {
             var atStart = index > 0  // a new line starts a sentence (or a list item)
@@ -200,7 +188,7 @@ public enum Transcription {
             }
         }
         var seen = Set<String>()
-        return Array(picked.reversed().filter { seen.insert($0.lowercased()).inserted }.prefix(limit))
+        return picked.reversed().filter { seen.insert($0.lowercased()).inserted }
     }
 
     @available(macOS 26.0, *)

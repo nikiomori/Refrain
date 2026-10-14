@@ -1,12 +1,11 @@
 import AVFoundation
-import FluidAudio
 import Testing
 @testable import RefrainKit
 
 @Test func segmentsEndAtSentencesAndPauses() {
     let words = [("Привет,", 0.0, 0.4), ("мир.", 0.5, 0.9), ("Как", 1.0, 1.2), ("дела", 1.3, 1.6),
                  ("потом", 3.0, 3.4), ("пауза", 3.5, 3.9)]
-        .map { WordTiming(word: $0.0, startTime: $0.1, endTime: $0.2) }
+        .map { Transcript.Segment(start: $0.1, end: $0.2, text: $0.0) }
     #expect(Parakeet.segments(from: words) == [
         .init(start: 0, end: 0.9, text: "Привет, мир."),
         .init(start: 1.0, end: 1.6, text: "Как дела"),

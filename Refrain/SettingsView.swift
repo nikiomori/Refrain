@@ -1,5 +1,6 @@
 import RefrainKit
 import ServiceManagement
+import Speech
 import SwiftUI
 
 struct SettingsView: View {
@@ -22,7 +23,6 @@ private struct GeneralSettings: View {
     let model: AppModel
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var port = 0
-    @AppStorage(Updater.autoKey) private var checkForUpdates = true
 
     var body: some View {
         Form {
@@ -53,11 +53,6 @@ private struct GeneralSettings: View {
                 Text("Apps that speak the OpenAI API transcribe here: set this address as the server, any model name, no key. Only this Mac can connect, never a web page.")
                     .foregroundStyle(.secondary)
             }
-
-            Section("Updates") {
-                Toggle("Check for updates automatically", isOn: $checkForUpdates)
-                UpdateRow(model: model, updater: .shared)
-            }
         }
         .formStyle(.grouped)
         .onAppear { port = model.port }
@@ -71,46 +66,6 @@ private struct GeneralSettings: View {
             return
         }
         model.setPort(port)
-    }
-}
-
-private struct UpdateRow: View {
-    let model: AppModel
-    let updater: Updater
-
-    var body: some View {
-        LabeledContent {
-            switch updater.state {
-            case .checking, .installing:
-                ProgressView().controlSize(.small)
-            case .available(let release):
-                Link("What's New", destination: release.html_url)
-                Button("Install and Relaunch") { updater.install(release) }
-                    .disabled(model.queued > 0)
-            case .failed(_, let release?):
-                Link("Open GitHub", destination: release.html_url)
-                Button("Try Again") { updater.install(release) }
-            default:
-                Button("Check Now") { Task { await updater.check() } }
-            }
-        } label: {
-            switch updater.state {
-            case .available(let release):
-                Text("Refrain \(release.version) is available")
-                Text(model.queued == 0 ? "You have \(Updater.current)." : "You can install it after the transcription.")
-            case .installing:
-                Text("Installing the update…")
-                Text("Refrain relaunches when it's done.")
-            default:
-                Text("Refrain \(Updater.current)")
-                switch updater.state {
-                case .checking: Text("Checking…")
-                case .upToDate: Text("This is the latest version.")
-                case .failed(let message, _): Text(message)
-                default: EmptyView()
-                }
-            }
-        }
     }
 }
 
@@ -163,7 +118,7 @@ private struct ModelSettings: View {
         .formStyle(.grouped)
         .task {
             // "mul" is a multilingual model, not a language to list.
-            appleCodes = Set(await Transcription.appleLocales.compactMap { $0.language.languageCode?.identifier }).subtracting(["mul"])
+            appleCodes = Set(await SpeechTranscriber.supportedLocales.compactMap { $0.language.languageCode?.identifier }).subtracting(["mul"])
         }
     }
 

@@ -73,23 +73,24 @@ public enum Parakeet {
             defer { watcher.cancel() }
             result = try await manager.transcribe(file, decoderState: &state, language: hint)
         }
-        let words = buildWordTimings(from: result.tokenTimings ?? [])
-        return (result.text, segments(from: words), words.map { .init(start: $0.startTime, end: $0.endTime, text: $0.word) })
+        let words = buildWordTimings(from: result.tokenTimings ?? []).map {
+            Transcript.Segment(start: $0.startTime, end: $0.endTime, text: $0.word)
+        }
+        return (result.text, segments(from: words), words)
     }
 
     /// Sentences, as Parakeet punctuates them; a pause of a second or 30 s without a full stop
     /// also ends one, so an unpunctuated stretch still gets timestamps to seek to.
-    static func segments(from words: [WordTiming]) -> [Transcript.Segment] {
+    static func segments(from words: [Transcript.Segment]) -> [Transcript.Segment] {
         var segments: [Transcript.Segment] = []
-        var current: [WordTiming] = []
+        var current: [Transcript.Segment] = []
         for (index, word) in words.enumerated() {
             current.append(word)
             let next = index + 1 < words.count ? words[index + 1] : nil
-            let sentenceEnds = word.word.last.map { ".?!…".contains($0) } ?? false
-            if next == nil || sentenceEnds || next!.startTime - word.endTime >= 1
-                || word.endTime - current[0].startTime >= 30 {
-                segments.append(.init(start: current[0].startTime, end: word.endTime,
-                                      text: current.map(\.word).joined(separator: " ")))
+            let sentenceEnds = word.text.last.map { ".?!…".contains($0) } ?? false
+            if next == nil || sentenceEnds || next!.start - word.end >= 1 || word.end - current[0].start >= 30 {
+                segments.append(.init(start: current[0].start, end: word.end,
+                                      text: current.map(\.text).joined(separator: " ")))
                 current = []
             }
         }

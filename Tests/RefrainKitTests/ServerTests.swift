@@ -7,19 +7,22 @@ import Testing
 /// Real HTTP over loopback against a stub engine: request parsing, multipart, the web-page
 /// guards and the response formats, everything but the speech models.
 @Suite struct ServerTests {
-    let server: Server
+    let port: UInt16
     let seen = Seen()
 
     init() async throws {
-        let ready = AsyncStream.makeStream(of: Server.State.self)
+        guard #available(macOS 26.0, *) else { throw TranscriptionError.unsupportedSystem }
+        let ready = AsyncStream.makeStream(of: NetworkListener<TCP>.State.self)
         let seen = seen
-        server = try Server(port: 0, transcribe: { request in
+        let server = try Server(port: 0, transcribe: { request in
             await seen.record(request)
             return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.", speaker: "B")],
                               words: [.init(start: 0, end: 0.6, text: "Привет,"), .init(start: 0.7, end: 1.5, text: "мир.")],
                               language: "ru", duration: 1.5)
         }, onState: { ready.continuation.yield($0) })
+        Task { try? await server.run() }
         for await state in ready.stream { #expect(state == .ready); break }
+        port = server.port
     }
 
     @Test func transcribesAMultipartUpload() async throws {
@@ -94,19 +97,19 @@ import Testing
     }
 
     @Test func listsTheOneModel() async throws {
-        let (status, body) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: localhost:\(server.port)\r\n\r\n".utf8))
+        let (status, body) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: localhost:\(port)\r\n\r\n".utf8))
         #expect(status == 200)
         #expect(String(decoding: body, as: UTF8.self).contains(#""id":"auto""#))
     }
 
     @Test func refusesAnotherHost() async throws {
-        let (status, _) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: evil.example:\(server.port)\r\n\r\n".utf8))
+        let (status, _) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: evil.example:\(port)\r\n\r\n".utf8))
         #expect(status == 403)
     }
 
     /// Open WebUI and LibreChat in Docker Desktop reach the Mac by this name.
     @Test func acceptsDocker() async throws {
-        let (status, _) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: host.docker.internal:\(server.port)\r\n\r\n".utf8))
+        let (status, _) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: host.docker.internal:\(port)\r\n\r\n".utf8))
         #expect(status == 200)
     }
 
@@ -132,19 +135,18 @@ import Testing
         }
         body += Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"call.wav\"\r\nContent-Type: audio/wav\r\n\r\n".utf8)
         body += audio + Data("\r\n--\(boundary)--\r\n".utf8)
-        let head = "POST /v1/audio/transcriptions HTTP/1.1\r\nHost: 127.0.0.1:\(server.port)\r\n\(extraHeaders)"
+        let head = "POST /v1/audio/transcriptions HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\(extraHeaders)"
             + "Content-Type: multipart/form-data; boundary=\(boundary)\r\nContent-Length: \(body.count)\r\n\r\n"
         return Data(head.utf8) + body
     }
 
     /// Raw TCP, since URLSession won't let a test forge `Host`.
     private func send(_ request: Data) async throws -> (Int, Data) {
-        let connection = NWConnection(host: "127.0.0.1", port: .init(rawValue: server.port)!, using: .tcp)
-        connection.start(queue: .global())
-        defer { connection.cancel() }
+        guard #available(macOS 26.0, *) else { throw TranscriptionError.unsupportedSystem }
+        let connection = NetworkConnection(to: .hostPort(host: "127.0.0.1", port: .init(rawValue: port)!)) { TCP() }
         try await connection.send(request)
         var response = Data()
-        while let chunk = try await connection.receive(upTo: 1 << 20) { response += chunk }
+        while case let chunk = try await connection.receive(atMost: 1 << 20).content, !chunk.isEmpty { response += chunk }
         // A 100 Continue may come first.
         var text = String(decoding: response, as: UTF8.self)
         if text.hasPrefix("HTTP/1.1 100") { text = String(text.split(separator: "\r\n\r\n", maxSplits: 1)[1]) }

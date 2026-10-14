@@ -27,13 +27,8 @@ public struct TranscriptionRequest: Sendable {
 /// Web pages are kept out: only the loopback address listens, `Host` must
 /// name it (no DNS rebinding), a browser's `Origin` is refused, and there are no CORS headers.
 /// Native clients and Electron (`app://`) send neither.
-public final class Server: @unchecked Sendable {
-    public enum State: Sendable, Equatable {
-        case ready
-        /// `.posix(.EADDRINUSE)`: another app has the port.
-        case failed(NWError)
-    }
-
+@available(macOS 26.0, *)
+public final class Server: Sendable {
     /// Big enough for an hour of uncompressed stereo; the file is streamed to disk, never held.
     static let maxBody = 2 << 30
 
@@ -42,41 +37,26 @@ public final class Server: @unchecked Sendable {
 
     public var port: UInt16 { listener.port?.rawValue ?? 0 }
 
-    private let listener: NWListener
-    private let queue = DispatchQueue(label: "dev.nikiomori.refrain.server")
+    private let listener: NetworkListener<TCP>
     private let transcribe: @Sendable (TranscriptionRequest) async throws -> Transcript
 
-    /// `port` 0 picks a free one (tests). `onState` hears whether the port could be had.
+    /// `port` 0 picks a free one (tests). `onState` hears whether the port could be had:
+    /// `.failed(.posix(.EADDRINUSE))` when another app has it.
     public init(port: UInt16,
                 transcribe: @escaping @Sendable (TranscriptionRequest) async throws -> Transcript,
-                onState: @escaping @Sendable (State) -> Void) throws {
-        let parameters = NWParameters.tcp
-        parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: port) ?? .any)
-        listener = try NWListener(using: parameters)
+                onState: @escaping @Sendable (NetworkListener<TCP>.State) -> Void) throws {
+        listener = try NetworkListener(using: .parameters { TCP() }
+            .localEndpoint(.hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: port) ?? .any)))
+            .onStateUpdate { _, state in onState(state) }
         self.transcribe = transcribe
-        listener.stateUpdateHandler = { [listener] state in
-            switch state {
-            case .ready:
-                onState(.ready)
-            case .failed(let error):
-                listener.cancel()
-                onState(.failed(error))
-            default:
-                break
-            }
-        }
-        listener.newConnectionHandler = { [weak self, queue] connection in
-            connection.start(queue: queue)
-            Task { await self?.serve(connection) }
-        }
-        listener.start(queue: queue)
     }
 
-    public func stop() {
-        listener.cancel()
+    /// Serves until the task is cancelled, which also cuts off the requests in progress.
+    public func run() async throws {
+        try await listener.run { [self] connection in await serve(connection) }
     }
 
-    private func serve(_ connection: NWConnection) async {
+    private func serve(_ connection: NetworkConnection<TCP>) async {
         let response: Response
         do {
             response = try await respond(on: connection)
@@ -86,14 +66,14 @@ public final class Server: @unchecked Sendable {
             response = .error(500, error.localizedDescription)  // the disk, or a client already gone
         }
         try? await connection.send(response.serialized)
-        connection.cancel()
     }
 
-    private func respond(on connection: NWConnection) async throws -> Response {
+    private func respond(on connection: NetworkConnection<TCP>) async throws -> Response {
         var buffer = Data()
         while buffer.firstRange(of: Data("\r\n\r\n".utf8)) == nil {
             guard buffer.count < 16_384 else { throw HTTPError(431, "The request headers are too large.") }
-            guard let chunk = try await connection.receive(upTo: 16_384) else { throw HTTPError(400, "The request ended early.") }
+            let chunk = try await connection.receive(atMost: 16_384).content
+            guard !chunk.isEmpty else { throw HTTPError(400, "The request ended early.") }
             buffer.append(chunk)
         }
         let end = buffer.firstRange(of: Data("\r\n\r\n".utf8))!
@@ -131,9 +111,8 @@ public final class Server: @unchecked Sendable {
         var received = buffer.count - end.upperBound
         try handle.write(contentsOf: buffer[end.upperBound...])
         while received < length {
-            guard let chunk = try await connection.receive(upTo: min(1 << 20, length - received)) else {
-                throw HTTPError(400, "The upload ended early.")
-            }
+            let chunk = try await connection.receive(atMost: min(1 << 20, length - received)).content
+            guard !chunk.isEmpty else { throw HTTPError(400, "The upload ended early.") }
             try handle.write(contentsOf: chunk)
             received += chunk.count
         }
@@ -242,11 +221,9 @@ struct Response {
         return response
     }
 
+    /// No reason phrase: HTTP/1.1 makes it optional, and clients go by the code.
     var serialized: Data {
-        let reasons = [200: "OK", 400: "Bad Request", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed",
-                       411: "Length Required", 413: "Content Too Large", 415: "Unsupported Media Type",
-                       431: "Request Header Fields Too Large", 500: "Internal Server Error"]
-        let head = "HTTP/1.1 \(status) \(reasons[status] ?? "Error")\r\nContent-Type: \(type)\r\n"
+        let head = "HTTP/1.1 \(status) \r\nContent-Type: \(type)\r\n"
             + "Content-Length: \(body.count)\r\nConnection: close\r\n\r\n"
         return Data(head.utf8) + body
     }
@@ -325,26 +302,5 @@ enum Subtitles {
     static func time(_ seconds: Double, _ separator: String) -> String {
         let ms = Int((seconds * 1000).rounded())
         return String(format: "%02d:%02d:%02d%@%03d", ms / 3_600_000, ms / 60_000 % 60, ms / 1000 % 60, separator, ms % 1000)
-    }
-}
-
-extension NWConnection {
-    /// nil once the client has closed its side.
-    func receive(upTo maximum: Int) async throws -> Data? {
-        try await withCheckedThrowingContinuation { continuation in
-            receive(minimumIncompleteLength: 1, maximumLength: maximum) { data, _, _, error in
-                if let error { continuation.resume(throwing: error) } else {
-                    continuation.resume(returning: data?.isEmpty == false ? data : nil)
-                }
-            }
-        }
-    }
-
-    func send(_ data: Data) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            send(content: data, completion: .contentProcessed { error in
-                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
-            })
-        }
     }
 }

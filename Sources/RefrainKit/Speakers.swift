@@ -20,15 +20,12 @@ public enum Speakers {
         }
     }
 
-    public static func download() async throws {
-        _ = try await OfflineDiarizerModels.load()
-    }
-
     public static func delete() {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// Loads and compiles the models once, so the first request after an update of macOS doesn't.
+    /// Downloads the models if they're missing (the Download button), then loads and compiles
+    /// them, so the first request after an update of macOS doesn't.
     public static func warmUp() async throws {
         try await OfflineDiarizerManager().prepareModels()
     }
@@ -64,11 +61,8 @@ public enum Speakers {
         var phrases: [Transcript.Segment] = []
         var start = 0
         for end in 1...words.count where end == words.count || voices[end] != voices[start] {
-            let run = words[start..<end].map { WordTiming(word: $0.text, startTime: $0.start, endTime: $0.end) }
-            phrases += Parakeet.segments(from: run).map {
-                var phrase = $0
-                phrase.speaker = voices[start]
-                return phrase
+            phrases += Parakeet.segments(from: Array(words[start..<end])).map {
+                .init(start: $0.start, end: $0.end, text: $0.text, speaker: voices[start])
             }
             start = end
         }
