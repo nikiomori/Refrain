@@ -9,10 +9,15 @@ import Testing
 @Suite struct ServerTests {
     let port: UInt16
     let seen = Seen()
+    /// Another service, as raw HTTP.
+    let upstream: Socket
 
     init() async throws {
         let seen = seen
-        let server = try Server(port: 0, transcribe: { request in
+        upstream = try Socket.listen(port: 0)
+        let remote = Remote(id: "groq/whisper-large-v3-turbo", url: URL(string: "http://127.0.0.1:\(upstream.port)/v1")!,
+                            model: "whisper-large-v3-turbo", key: { "sk-test" })
+        let server = try Server(port: 0, remotes: { [remote] }, transcribe: { request in
             await seen.record(request)
             if request.prompt == "hang up" {  // a long file, for a client that won't wait
                 do { try await Task.sleep(for: .seconds(30)) } catch { await seen.cancel(); throw error }
@@ -103,10 +108,41 @@ import Testing
         #expect(String(decoding: body, as: UTF8.self) == "Привет, мир.\n")
     }
 
-    @Test func listsTheOneModel() async throws {
+    @Test func listsTheModels() async throws {
         let (status, body) = try await send(Data("GET /v1/models HTTP/1.1\r\nHost: localhost:\(port)\r\n\r\n".utf8))
         #expect(status == 200)
-        #expect(String(decoding: body, as: UTF8.self).contains(#""id":"auto""#))
+        let text = String(decoding: body, as: UTF8.self)
+        #expect(text.contains(#""id":"auto""#) && text.contains(#""owned_by":"refrain""#))
+        #expect(text.contains(#""id":"groq/whisper-large-v3-turbo""#))
+    }
+
+    /// Another service's model: the request goes on to it under the service's own name and with
+    /// the key, and its answer, an error here, comes back as is.
+    @Test func forwardsAnotherServicesModel() async throws {
+        let upstream = upstream
+        let forwarded = Task {
+            let connection = try await upstream.accept()
+            var request = Data()
+            while !request.reversed().starts(with: Data("\n\r--".utf8)) {
+                let chunk = try await connection.receive(atMost: 1 << 20)
+                guard !chunk.isEmpty else { break }
+                request += chunk
+            }
+            let answer = #"{"error":{"message":"Invalid API Key"}}"#
+            try await connection.send(Data("HTTP/1.1 401 \r\nContent-Type: application/json\r\nContent-Length: \(answer.utf8.count)\r\n\r\n\(answer)".utf8))
+            await connection.finish()
+            return String(decoding: request, as: UTF8.self)
+        }
+        let (status, body) = try await send(upload(Data("RIFF".utf8), fields: [("model", "groq/whisper-large-v3-turbo"), ("language", "ru")]))
+        #expect(status == 401)
+        #expect(String(decoding: body, as: UTF8.self) == #"{"error":{"message":"Invalid API Key"}}"#)
+        let request = try await forwarded.value
+        #expect(request.hasPrefix("POST /v1/audio/transcriptions "))
+        #expect(request.contains("Authorization: Bearer sk-test\r\n"))
+        #expect(request.contains("name=\"model\"\r\n\r\nwhisper-large-v3-turbo\r\n"))
+        #expect(request.contains("name=\"language\"\r\n\r\nru\r\n"))
+        #expect(request.contains("filename=\"audio.wav\"\r\nContent-Type: application/octet-stream\r\n\r\nRIFF\r\n"))
+        #expect(await seen.request == nil)  // not this Mac's engines
     }
 
     @Test func refusesAnotherHost() async throws {

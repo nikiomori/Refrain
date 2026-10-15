@@ -3,6 +3,7 @@ import RefrainKit
 import RefrainServer
 import Observation
 import os
+import Security
 
 nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app")
 
@@ -29,6 +30,59 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private(set) var speakersDownloaded = Speakers.isDownloaded
     private(set) var downloadingSpeakers = false
     private(set) var speakersError: String?
+
+    /// When the menu bar item shows. Hidden, Refrain opened again from Finder or Spotlight shows Settings.
+    enum MenuBarIcon: String { case always, working, never }
+    var menuBarIcon = MenuBarIcon(rawValue: UserDefaults.standard.string(forKey: "menuBarIcon") ?? "") ?? .always {
+        didSet { UserDefaults.standard.set(menuBarIcon.rawValue, forKey: "menuBarIcon") }
+    }
+
+    /// Another OpenAI-compatible service, whose models apps ask Refrain for as `name/model`.
+    /// Its key is in the Keychain, under its `id`.
+    struct Provider: Codable, Identifiable, Hashable {
+        var id = UUID()
+        /// The first half of its models' names for apps: `groq` in `groq/whisper-large-v3-turbo`.
+        var name: String
+        /// Its base address: `https://api.groq.com/openai/v1`.
+        var url: String
+        /// Its own names for them, separated by commas or spaces.
+        var models: String
+
+        /// Its models as the server forwards them; none until it has a name, an address and a model.
+        var remotes: [Remote] {
+            guard !name.isEmpty, let url = URL(string: url.trimmingCharacters(in: .whitespaces)),
+                  url.scheme == "https" || url.scheme == "http", url.host() != nil else { return [] }
+            let account = id.uuidString
+            return models.split { $0 == "," || $0.isWhitespace }.map {
+                Remote(id: "\(name)/\($0)", url: url, model: String($0), key: { Keychain.read(account: account) })
+            }
+        }
+
+        static let presets: [(title: String, provider: Provider)] = [
+            ("OpenAI", Provider(name: "openai", url: "https://api.openai.com/v1", models: "gpt-transcribe, gpt-4o-transcribe-diarize")),
+            ("Groq", Provider(name: "groq", url: "https://api.groq.com/openai/v1", models: "whisper-large-v3-turbo")),
+            ("Mistral", Provider(name: "mistral", url: "https://api.mistral.ai/v1", models: "voxtral-mini-latest")),
+            (String(localized: "Other"), Provider(name: "", url: "", models: "")),
+        ]
+    }
+
+    var providers = (try? JSONDecoder().decode([Provider].self, from: UserDefaults.standard.data(forKey: "providers") ?? Data())) ?? [] {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(providers), forKey: "providers") }
+    }
+
+    func addProvider(_ preset: Provider) {
+        var provider = preset
+        provider.id = UUID()
+        providers.append(provider)
+    }
+
+    func removeProvider(_ provider: Provider) {
+        providers.removeAll { $0.id == provider.id }
+        Keychain.write(nil, account: provider.id.uuidString)
+    }
+
+    /// What the server forwards, read at each request.
+    var remotes: [Remote] { providers.flatMap(\.remotes) }
 
     static let defaultPort = 8178
     private(set) var port = UserDefaults.standard.object(forKey: "port") as? Int ?? defaultPort
@@ -88,7 +142,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             return
         }
         do {
-            let server = try Server(port: port, transcribe: { [self] request in try await transcribe(request) })
+            let server = try Server(port: port, remotes: { [self] in await remotes },
+                                    transcribe: { [self] request in try await transcribe(request) })
             self.server = Task { await server.run() }
             status = .ready
             log.notice("Listening on 127.0.0.1:\(port)")
@@ -189,6 +244,32 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                 ? String(localized: "Transcribing — \(progress.done.clock) of \(progress.of.clock), \(queued - 1) waiting")
                 : String(localized: "Transcribing — \(progress.done.clock) of \(progress.of.clock)")
         }
+    }
+}
+
+/// Services' keys, in the login Keychain: never in preferences, never in the log.
+nonisolated enum Keychain {
+    private static func query(_ account: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: "dev.nikiomori.refrain.provider",
+         kSecAttrAccount as String: account]
+    }
+
+    static func read(account: String) -> String? {
+        var query = query(account)
+        query[kSecReturnData as String] = true
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// Empty or nil deletes it.
+    static func write(_ value: String?, account: String) {
+        SecItemDelete(query(account) as CFDictionary)
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return }
+        var item = query(account)
+        item[kSecValueData as String] = Data(value.utf8)
+        SecItemAdd(item as CFDictionary, nil)
     }
 }
 

@@ -29,8 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.menu = menu
         Task {
-            for await working in Observations({ AppModel.shared.status == .transcribing }) {
+            for await (working, icon) in Observations({ (AppModel.shared.status == .transcribing, AppModel.shared.menuBarIcon) }) {
                 item.button?.image = .refrainGlyph(working: working)
+                item.isVisible = icon == .always || icon == .working && working
             }
         }
 
@@ -75,13 +76,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         AppModel.shared.copyAddress()
     }
 
-    /// General and Models as toolbar tabs, each as tall as its content, like Apple's settings.
+    /// General, Models and Services as toolbar tabs, each as tall as its content, like Apple's settings.
     @objc private func showSettings() {
         if settings == nil {
             let tabs = SettingsTabs()
             tabs.tabStyle = .toolbar
             tabs.addTabViewItem(.init("general", String(localized: "General"), "gearshape", GeneralSettings(model: .shared)))
             tabs.addTabViewItem(.init("models", String(localized: "Models"), "waveform", ModelSettings(model: .shared)))
+            tabs.addTabViewItem(.init("services", String(localized: "Services"), "network", ServiceSettings(model: .shared)))
             let saved = UserDefaults.standard.string(forKey: "settingsTab")
             tabs.selectedTabViewItemIndex = tabs.tabViewItems.firstIndex { $0.identifier as? String == saved } ?? 0
             settings = window(tabs, style: [.titled, .closable])

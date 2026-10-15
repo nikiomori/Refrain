@@ -4,7 +4,7 @@ import Speech
 import SwiftUI
 
 struct GeneralSettings: View {
-    let model: AppModel
+    @Bindable var model: AppModel
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var port = 0
 
@@ -21,6 +21,17 @@ struct GeneralSettings: View {
                         openAtLogin = SMAppService.mainApp.status == .enabled
                     }
                 }
+
+            Section {
+                Picker("Menu Bar Icon", selection: $model.menuBarIcon) {
+                    Text("Always").tag(AppModel.MenuBarIcon.always)
+                    Text("While Transcribing").tag(AppModel.MenuBarIcon.working)
+                    Text("Never").tag(AppModel.MenuBarIcon.never)
+                }
+            } footer: {
+                Text("Open Refrain again from Finder or Spotlight to see these settings.")
+                    .foregroundStyle(.secondary)
+            }
 
             Section {
                 TextField("Port", value: $port, format: .number.grouping(.never))
@@ -155,5 +166,62 @@ private struct ParakeetState: View {
         }
         .fixedSize()
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// Other services' models, which apps reach through Refrain beside this Mac's own.
+struct ServiceSettings: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        Form {
+            ForEach($model.providers) { $provider in
+                Section {
+                    TextField("Name", text: $provider.name, prompt: Text(verbatim: "groq"))
+                    TextField("Address", text: $provider.url, prompt: Text(verbatim: "https://api.groq.com/openai/v1"))
+                    KeyField(account: provider.id.uuidString)
+                    TextField("Models", text: $provider.models, prompt: Text(verbatim: "whisper-large-v3-turbo"))
+                    Button("Remove", role: .destructive) { model.removeProvider(provider) }
+                } footer: {
+                    let names = provider.remotes.map(\.id)
+                    Group {
+                        if names.isEmpty {
+                            Text("Give it a name, an address and a model.")
+                        } else {
+                            Text("In apps, set the model to \(names.formatted(.list(type: .or))).")
+                        }
+                    }
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                }
+            }
+
+            Section {
+                Menu("Add Service") {
+                    ForEach(AppModel.Provider.presets, id: \.title) { preset in
+                        Button(preset.title) { model.addProvider(preset.provider) }
+                    }
+                }
+                .fixedSize()
+            } footer: {
+                Text("Apps reach these models through Refrain, with the key kept here, in the Keychain. Their audio goes to the service; auto and any other model name stay on this Mac.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// In the Keychain as it's typed: a paste is one change.
+private struct KeyField: View {
+    let account: String
+    @State private var key = ""
+
+    var body: some View {
+        SecureField("Key", text: $key)
+            .onAppear { key = Keychain.read(account: account) ?? "" }
+            .onChange(of: key) { _, key in
+                if key != Keychain.read(account: account) ?? "" { Keychain.write(key, account: account) }
+            }
     }
 }

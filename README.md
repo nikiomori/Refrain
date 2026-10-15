@@ -39,7 +39,7 @@ with open("call.m4a", "rb") as f:
 - **`language`**: ISO 639-1 (`ru`, `en`). It picks the engine. Without it, Parakeet detects the language if it's downloaded, otherwise Apple's model for the system language is used. `languages[]`, as `gpt-transcribe` takes it, works too: the first one counts.
 - **`prompt`** and **`keywords[]`**: the keywords, and the names and terms in the prompt (capitalized mid-sentence, or like `iPhone`, `MLX`), are passed as spelling hints to Apple's older model, the only engine that takes them. Apple's newer model spells names the same with hints or without, and Parakeet takes none.
 - **`response_format`**: `json`, `text`, `srt`, `vtt` or `verbose_json`, with segment timestamps and, with `timestamp_granularities[]=word`, word timestamps. `diarized_json`, as OpenAI's `gpt-4o-transcribe-diarize` returns it, tells the voices apart: each phrase has a `speaker`, `A`, `B`… It needs the speaker model (22 MB, Settings › Models); without it the request gets a 400.
-- **`model`** is accepted and ignored. `GET /v1/models` lists one model, `auto`.
+- **`model`**: `auto`, or any other name, transcribes on this Mac. A name from Settings › Services, like `groq/whisper-large-v3-turbo`, goes to that service instead ([below](#other-services)). `GET /v1/models` lists `auto` and those.
 
 Requests run one at a time, in order; one whose client hangs up is dropped, running or waiting. The port can be changed in Settings; Refrain never moves to another one on its own, since clients have it written down.
 
@@ -55,6 +55,16 @@ Requests run one at a time, in order; one whose client hangs up is dropped, runn
 - **Apps in Docker** (Open WebUI, LibreChat): base URL `http://host.docker.internal:8178/v1`.
 - **Shortcuts, Spotlight and Siri:** the *Transcribe Audio File* action takes a file and gives back its text. In a shortcut that receives files from Quick Actions, it's in Finder's right-click menu.
 - **Any other app** that lets you set an OpenAI-compatible or Whisper server: base URL `http://127.0.0.1:8178/v1`, any model name, any key or none. Some, like VoiceInk and Obsidian Whisper, want the full address: `http://127.0.0.1:8178/v1/audio/transcriptions`.
+
+### Other services
+
+Settings › Services adds another OpenAI-compatible service: OpenAI, Groq, Mistral, or any server with `POST /v1/audio/transcriptions`, with its address, key and models. Refrain then serves its models too, as `name/model`, and apps reach them through Refrain: one address for every app, and the key kept once, in the login Keychain, rather than in each of them.
+
+```sh
+curl http://127.0.0.1:8178/v1/audio/transcriptions -F file=@call.m4a -F model=groq/whisper-large-v3-turbo
+```
+
+The request goes on as it came, but for `model`, which becomes the service's own name for it, and the service's answer comes back as is, its errors included. These requests don't wait in the queue, which is for this Mac's engines, and the service's limits apply: file size, rate, formats.
 
 <p align="center">
 <picture>
@@ -99,7 +109,7 @@ Memory is the physical footprint, as Activity Monitor shows it. The app is 24 MB
 
 - Refrain listens on `127.0.0.1` only. `Host` must be `127.0.0.1` or `localhost` (no DNS rebinding), a request with a web page's `Origin` is refused, and there are no CORS headers: web pages can't use it.
 - The upload goes to a temporary file that is deleted once the response is sent; whatever a crash leaves behind is deleted at the next launch. No text is stored or logged: the log holds durations and processing times.
-- The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them. Apple's language packs are downloaded by macOS.
+- The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them, and the requests that name another service's model (Settings › Services), which go to that service with its key. Apple's language packs are downloaded by macOS.
 
 ## Build
 

@@ -11,12 +11,32 @@
         }
       }
     },
+    "Add Service" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добавить сервис"
+          }
+        }
+      }
+    },
     "Address" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Адрес"
+          }
+        }
+      }
+    },
+    "Always" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Всегда"
           }
         }
       }
@@ -47,6 +67,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Новая модель Apple. Языки скачиваются один раз для всех приложений на этом Mac."
+          }
+        }
+      }
+    },
+    "Apps reach these models through Refrain, with the key kept here, in the Keychain. Their audio goes to the service; auto and any other model name stay on this Mac." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Приложения обращаются к этим моделям через Refrain, с ключом, который хранится здесь, в Связке ключей. Их аудио уходит в сервис; auto и любая другая модель остаются на этом Mac."
           }
         }
       }
@@ -201,12 +231,52 @@
         }
       }
     },
+    "Give it a name, an address and a model." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Укажите название, адрес и модель."
+          }
+        }
+      }
+    },
+    "In apps, set the model to %@." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В приложениях укажите модель %@."
+          }
+        }
+      }
+    },
+    "Key" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ключ"
+          }
+        }
+      }
+    },
     "Language" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Язык"
+          }
+        }
+      }
+    },
+    "Menu Bar Icon" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значок в строке меню"
           }
         }
       }
@@ -221,6 +291,26 @@
         }
       }
     },
+    "Name" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название"
+          }
+        }
+      }
+    },
+    "Never" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Никогда"
+          }
+        }
+      }
+    },
     "Not downloaded" : {
       "localizations" : {
         "ru" : {
@@ -231,12 +321,32 @@
         }
       }
     },
+    "Open Refrain again from Finder or Spotlight to see these settings." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чтобы увидеть эти настройки, снова откройте Refrain из Finder или Spotlight."
+          }
+        }
+      }
+    },
     "Open at Login" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Открывать при входе"
+          }
+        }
+      }
+    },
+    "Other" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другой"
           }
         }
       }
@@ -331,12 +441,32 @@
         }
       }
     },
+    "Remove" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить"
+          }
+        }
+      }
+    },
     "Runs on the Neural Engine. Far more accurate than Apple's older model in these languages; Russian makes less than half the mistakes. Pretype shares the same copy." : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Работает на Neural Engine. На этих языках гораздо точнее старой модели Apple: в русском ошибок в два с лишним раза меньше. Pretype использует ту же копию."
+          }
+        }
+      }
+    },
+    "Services" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервисы"
           }
         }
       }
@@ -447,6 +577,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Добро пожаловать в Refrain"
+          }
+        }
+      }
+    },
+    "While Transcribing" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Во время расшифровки"
           }
         }
       }

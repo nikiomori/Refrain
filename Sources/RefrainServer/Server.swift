@@ -39,13 +39,16 @@ public final class Server: Sendable {
     public let port: UInt16
 
     private let listener: Socket
+    private let remotes: @Sendable () async -> [Remote]
     private let transcribe: @Sendable (TranscriptionRequest) async throws -> Transcript
 
     /// Listening from here on; `port` 0 picks a free one (tests). Throws `POSIXError.EADDRINUSE`
-    /// when another app has the port.
-    public init(port: UInt16, transcribe: @escaping @Sendable (TranscriptionRequest) async throws -> Transcript) throws {
+    /// when another app has the port. `remotes` are asked for at each request, so they're current.
+    public init(port: UInt16, remotes: @escaping @Sendable () async -> [Remote] = { [] },
+                transcribe: @escaping @Sendable (TranscriptionRequest) async throws -> Transcript) throws {
         listener = try Socket.listen(port: port)
         self.port = listener.port
+        self.remotes = remotes
         self.transcribe = transcribe
     }
 
@@ -85,7 +88,9 @@ public final class Server: Sendable {
 
         switch (head.method, head.path) {
         case ("GET", "/v1/models"):
-            return .json(#"{"object":"list","data":[{"id":"auto","object":"model","created":0,"owned_by":"refrain"}]}"#)
+            // Reprise knows Refrain by `"owned_by":"refrain"`.
+            let others = await remotes().map { Models.Model(id: $0.id, owned_by: $0.url.host() ?? "") }
+            return .json(Models(data: [.init(id: "auto", owned_by: "refrain")] + others))
         case ("POST", "/v1/audio/transcriptions"):
             break
         case (_, "/v1/models"), (_, "/v1/audio/transcriptions"):
@@ -125,6 +130,10 @@ public final class Server: Sendable {
         try? FileManager.default.removeItem(at: body)  // the file is out of it: not kept through the transcription
         defer { form.file.map { try? FileManager.default.removeItem(at: $0) } }
         guard let file = form.file else { throw HTTPError(400, "The request has no `file`.") }
+        // Another service's model: on to it, outside the queue, which is for this Mac's engines.
+        if let id = form["model"], let remote = await remotes().first(where: { $0.id == id }) {
+            return try await whileConnected(connection) { try await remote.forward(form, file: file) }
+        }
         let format = form["response_format"] ?? "json"
         guard ["json", "text", "verbose_json", "diarized_json", "srt", "vtt"].contains(format) else {
             throw HTTPError(400, "response_format must be json, text, verbose_json, diarized_json, srt or vtt.")
@@ -249,6 +258,19 @@ struct Response {
             + "Content-Length: \(body.count)\r\nConnection: close\r\n\r\n"
         return Data(head.utf8) + body
     }
+}
+
+/// `GET /v1/models`: `auto`, this Mac's engines, and other services' models.
+struct Models: Encodable {
+    struct Model: Encodable {
+        var id: String
+        var object = "model"
+        var created = 0
+        var owned_by: String
+    }
+
+    var object = "list"
+    var data: [Model]
 }
 
 /// `verbose_json` as OpenAI writes it: segments unless only words were asked for, words if asked for.
