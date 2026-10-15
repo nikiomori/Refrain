@@ -34,16 +34,49 @@ public enum Speakers {
     /// Downloads the models if they're missing (the Download button), then loads and compiles
     /// them, so the first request after an update of macOS doesn't.
     public static func warmUp() async throws {
-        try await OfflineDiarizerManager().prepareModels(configuration: neuralEngine)
+        try await diarizer.run { _ in }
     }
 
-    /// ponytail: loaded per request (22 MB, compiled once); keep a loader like Parakeet's if it shows.
     static func turns(in file: URL) async throws -> [Turn] {
-        let diarizer = OfflineDiarizerManager()
-        try await diarizer.prepareModels(configuration: neuralEngine)
-        return try await diarizer.process(file).segments.map {
-            Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
+        try await diarizer.run { diarizer in
+            try await diarizer.process(file).segments.map {
+                Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
+            }
         }
+    }
+
+    private static let diarizer = Diarizer()
+
+    /// Loaded at the first use and kept: in Refrain's engine, which quits when idle, that costs
+    /// nothing at rest, and a call's two sides come one after the other (0.09 s less each).
+    /// One use at a time, each after the last, since FluidAudio's diarizer is not to be shared.
+    private actor Diarizer {
+        private var loaded: Unshared?
+        private var tail: Task<Void, Never>?
+
+        func run<T: Sendable>(_ use: @escaping @Sendable (OfflineDiarizerManager) async throws -> T) async throws -> T {
+            let previous = tail
+            let job = Task {
+                await previous?.value
+                try Task.checkCancellation()
+                return try await use(try await load().value)
+            }
+            tail = Task { _ = try? await job.value }
+            return try await withTaskCancellationHandler { try await job.value } onCancel: { job.cancel() }
+        }
+
+        private func load() async throws -> Unshared {
+            if let loaded { return loaded }
+            let diarizer = OfflineDiarizerManager()
+            try await diarizer.prepareModels(configuration: Speakers.neuralEngine)
+            loaded = Unshared(value: diarizer)
+            return loaded!
+        }
+    }
+
+    /// Used by one job at a time: `Diarizer` runs them one after another.
+    private struct Unshared: @unchecked Sendable {
+        let value: OfflineDiarizerManager
     }
 
     /// The words in phrases, each phrase one voice's: a word goes to the turn that overlaps it
