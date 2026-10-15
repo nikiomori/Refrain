@@ -9,7 +9,7 @@ An open-source speech-to-text engine for macOS. It lives in the menu bar and tur
 
 <p align="center">macOS 26 or later · English and Russian · free, MIT · 0.1</p>
 
-Download it from [Releases](https://github.com/nikiomori/Refrain/releases/latest): open the zip and move Refrain.app to Applications. It's signed with Developer ID and notarized by Apple. Or build it from source (below).
+Install it with Homebrew, `brew install nikiomori/tap/refrain`, or download it from [Releases](https://github.com/nikiomori/Refrain/releases/latest): open the zip and move Refrain.app to Applications. It's signed with Developer ID and notarized by Apple. To build it yourself, see [Build](#build).
 
 <p align="center">
   <img src="docs/media/menu.png" width="335" alt="The Refrain menu: transcribing 12:30 of 1:02:03, its address, Copy Address, Settings and Quit">
