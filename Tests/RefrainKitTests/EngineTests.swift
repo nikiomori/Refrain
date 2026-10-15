@@ -22,8 +22,10 @@ import Testing
 
     @Test func transcriptsProgressAndRefusalsCross() async throws {
         guard #available(macOS 26.0, *) else { return }
+        let asked = Mutex<Int?>(nil)
         let engine = engine { work, progress in
-            guard case .transcribe(let file, _, _, _, _) = work else { return .done(nil) }
+            guard case .transcribe(let file, _, _, _, _, let minSpeakers, _) = work else { return .done(nil) }
+            asked.withLock { $0 = minSpeakers }
             if file.lastPathComponent == "noise" { return .refused(.unreadableAudio) }
             progress(1.5, 3)
             return .done(Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 3, text: "Привет, мир.", speaker: "A")],
@@ -31,8 +33,9 @@ import Testing
         }
         let reports = Mutex<[Double]>([])
         let transcript = try await engine.transcribe(file: URL(filePath: "/call.m4a"), language: "ru", prompt: nil, keywords: [],
-                                                     speakers: true) { done, _ in reports.withLock { $0.append(done) } }
+                                                     speakers: true, minSpeakers: 2) { done, _ in reports.withLock { $0.append(done) } }
         #expect(transcript.text == "Привет, мир.")
+        #expect(asked.withLock { $0 } == 2)  // the count of voices crosses too
         #expect(transcript.segments.first?.speaker == "A")
         for _ in 0..<100 where reports.withLock({ $0.isEmpty }) { try await Task.sleep(for: .milliseconds(10)) }
         #expect(reports.withLock { $0 } == [1.5])

@@ -11,13 +11,19 @@ public struct TranscriptionRequest: Sendable {
     public var keywords: [String] = []
     /// Tell the voices apart (`diarized_json`).
     public var speakers = false
+    /// How many voices the client says there are (`min_speakers`, `max_speakers`); none: as many as are heard.
+    public var minSpeakers: Int?
+    public var maxSpeakers: Int?
 
-    public init(file: URL, language: String?, prompt: String?, keywords: [String] = [], speakers: Bool = false) {
+    public init(file: URL, language: String?, prompt: String?, keywords: [String] = [], speakers: Bool = false,
+                minSpeakers: Int? = nil, maxSpeakers: Int? = nil) {
         self.file = file
         self.language = language
         self.prompt = prompt
         self.keywords = keywords
         self.speakers = speakers
+        self.minSpeakers = minSpeakers
+        self.maxSpeakers = maxSpeakers
     }
 }
 
@@ -141,8 +147,20 @@ public final class Server: Sendable {
         // `languages[]` and `keywords[]` are what OpenAI's gpt-transcribe takes; the first language picks the engine.
         let language = form["language"] ?? form.list("languages").first
 
+        // pyannote's and whisperX's servers take these: a call's mix has at least two voices, and
+        // untold, one that speaks little is taken for the one that speaks most.
+        func count(_ name: String) throws -> Int? {
+            guard let value = form[name] else { return nil }
+            guard let count = Int(value), count >= 1 else { throw HTTPError(400, "\(name) must be a whole number from 1.") }
+            return count
+        }
+        let minSpeakers = try count("min_speakers"), maxSpeakers = try count("max_speakers")
+        if let minSpeakers, let maxSpeakers, minSpeakers > maxSpeakers {
+            throw HTTPError(400, "min_speakers can't be more than max_speakers.")
+        }
         let request = TranscriptionRequest(file: file, language: language, prompt: form["prompt"],
-                                           keywords: form.list("keywords"), speakers: format == "diarized_json")
+                                           keywords: form.list("keywords"), speakers: format == "diarized_json",
+                                           minSpeakers: minSpeakers, maxSpeakers: maxSpeakers)
         let transcript: Transcript
         do {
             transcript = try await whileConnected(connection) { [transcribe] in try await transcribe(request) }

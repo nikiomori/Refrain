@@ -18,7 +18,8 @@ import os
 
 struct Job: Codable {
     enum Work: Codable {
-        case transcribe(file: URL, language: String?, prompt: String?, keywords: [String], speakers: Bool)
+        case transcribe(file: URL, language: String?, prompt: String?, keywords: [String], speakers: Bool,
+                        minSpeakers: Int? = nil, maxSpeakers: Int? = nil)
         case warmUpParakeet, downloadParakeet, warmUpSpeakers, deleteParakeet
     }
 
@@ -64,8 +65,10 @@ public final class Engine: NSObject, EngineClientProtocol, @unchecked Sendable {
     }
 
     public func transcribe(file: URL, language: String?, prompt: String?, keywords: [String], speakers: Bool,
+                           minSpeakers: Int? = nil, maxSpeakers: Int? = nil,
                            progress: @escaping @Sendable (_ done: TimeInterval, _ total: TimeInterval) -> Void) async throws -> Transcript {
-        let work = Job.Work.transcribe(file: file, language: language, prompt: prompt, keywords: keywords, speakers: speakers)
+        let work = Job.Work.transcribe(file: file, language: language, prompt: prompt, keywords: keywords, speakers: speakers,
+                                       minSpeakers: minSpeakers, maxSpeakers: maxSpeakers)
         guard let transcript = try await run(work, progress: progress) else { throw EngineError.failed("No transcript came back.") }
         return transcript
     }
@@ -201,9 +204,10 @@ public final class EngineService: NSObject, NSXPCListenerDelegate, EngineProtoco
     static func perform(_ work: Job.Work, progress: @escaping @Sendable (Double, Double) -> Void) async -> Outcome {
         do {
             switch work {
-            case let .transcribe(file, language, prompt, keywords, speakers):
-                return .done(try await Transcription.transcribe(file: file, language: language, prompt: prompt,
-                                                                keywords: keywords, speakers: speakers, progress: progress))
+            case let .transcribe(file, language, prompt, keywords, speakers, minSpeakers, maxSpeakers):
+                return .done(try await Transcription.transcribe(file: file, language: language, prompt: prompt, keywords: keywords,
+                                                                speakers: speakers, minSpeakers: minSpeakers, maxSpeakers: maxSpeakers,
+                                                                progress: progress))
             case .warmUpParakeet: try await Parakeet.warmUp()
             case .downloadParakeet: try await Parakeet.download { progress($0, 1) }
             case .warmUpSpeakers: try await Speakers.warmUp()

@@ -178,7 +178,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
             }
             return try await engine.transcribe(file: request.file, language: request.language,
                                                prompt: request.prompt, keywords: request.keywords,
-                                               speakers: request.speakers) { done, total in
+                                               speakers: request.speakers, minSpeakers: request.minSpeakers,
+                                               maxSpeakers: request.maxSpeakers) { done, total in
                 Task { @MainActor in
                     let model = AppModel.shared
                     // Late reports of a finished file don't bring its status back.

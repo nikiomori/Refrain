@@ -80,10 +80,12 @@ public enum Transcription {
     }
 
     /// Transcribe `file`. `keywords` are spellings to listen for, ahead of the names in `prompt`.
-    /// With `speakers`, each segment says which voice it is, told apart while the words are heard.
+    /// With `speakers`, each segment says which voice it is, told apart while the words are heard,
+    /// as many voices as `minSpeakers` and `maxSpeakers` allow when they're given.
     /// `progress` gets the seconds of audio done so far and the file's length.
     @available(macOS 26.0, *)
     public static func transcribe(file: URL, language: String?, prompt: String?, keywords: [String] = [], speakers: Bool = false,
+                                  minSpeakers: Int? = nil, maxSpeakers: Int? = nil,
                                   progress: @escaping @Sendable (_ done: TimeInterval, _ total: TimeInterval) -> Void = { _, _ in }
     ) async throws -> Transcript {
         guard SpeechTranscriber.isAvailable else { throw TranscriptionError.unsupportedSystem }
@@ -101,7 +103,7 @@ public enum Transcription {
         let parakeet = if case .parakeet = engine { true } else { false }
         let mono = try parakeet || speakers ? Self.mono(audio) : nil
         defer { mono.map { try? FileManager.default.removeItem(at: $0) } }
-        async let turns = speakers ? Speakers.turns(in: mono!) : []
+        async let turns = speakers ? Speakers.turns(in: mono!, minSpeakers: minSpeakers, maxSpeakers: maxSpeakers) : []
         let progress: @Sendable (TimeInterval) -> Void = { progress(min($0, duration), duration) }
         var (text, segments, words): (String, [Transcript.Segment], [Transcript.Segment])
         switch engine {

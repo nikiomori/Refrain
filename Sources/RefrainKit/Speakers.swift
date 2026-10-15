@@ -38,9 +38,11 @@ public enum Speakers {
     }
 
     /// None when no voice speaks long enough to tell (a muted side, one "yeah"): the words then
-    /// come back as one phrase rather than as an error.
-    static func turns(in file: URL) async throws -> [Turn] {
-        try await diarizer.run { diarizer in
+    /// come back as one phrase rather than as an error. `minSpeakers` and `maxSpeakers` bound the
+    /// voices found: untold, the clustering took both people of a call for one when one of them
+    /// spoke little (15 s of 105, 23 of 161), and `minSpeakers: 2` told them apart.
+    static func turns(in file: URL, minSpeakers: Int? = nil, maxSpeakers: Int? = nil) async throws -> [Turn] {
+        try await diarizer.run(minSpeakers: minSpeakers, maxSpeakers: maxSpeakers) { diarizer in
             do {
                 return try await diarizer.process(file).segments.map {
                     Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
@@ -60,15 +62,28 @@ public enum Speakers {
         private var loaded: Unshared?
         private var tail: Task<Void, Never>?
 
-        func run<T: Sendable>(_ use: @escaping @Sendable (OfflineDiarizerManager) async throws -> T) async throws -> T {
+        func run<T: Sendable>(minSpeakers: Int? = nil, maxSpeakers: Int? = nil,
+                              _ use: @escaping @Sendable (OfflineDiarizerManager) async throws -> T) async throws -> T {
             let previous = tail
             let job = Task {
                 await previous?.value
                 try Task.checkCancellation()
-                return try await use(try await load().value)
+                return try await use(try await manager(minSpeakers: minSpeakers, maxSpeakers: maxSpeakers).value)
             }
             tail = Task { _ = try? await job.value }
             return try await withTaskCancellationHandler { try await job.value } onCancel: { job.cancel() }
+        }
+
+        /// The loaded one, or with a count of voices, one of its own: the count is in a manager's
+        /// configuration. Its models come from the compiled ones already loaded: 0.05 s and 3 MB more.
+        private func manager(minSpeakers: Int?, maxSpeakers: Int?) async throws -> Unshared {
+            guard minSpeakers != nil || maxSpeakers != nil else { return try await load() }
+            var config = OfflineDiarizerConfig.default
+            config.clustering.minSpeakers = minSpeakers
+            config.clustering.maxSpeakers = maxSpeakers
+            let diarizer = OfflineDiarizerManager(config: config)
+            try await diarizer.prepareModels(configuration: Speakers.neuralEngine)
+            return Unshared(value: diarizer)
         }
 
         private func load() async throws -> Unshared {

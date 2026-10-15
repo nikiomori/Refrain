@@ -85,6 +85,20 @@ import Testing
         #expect(segment["text"] as? String == "Привет, мир.")
     }
 
+    /// How many voices there are, as pyannote's and whisperX's servers take it: on to the engine,
+    /// and what isn't a count turned down.
+    @Test func speakerCounts() async throws {
+        let (status, _) = try await send(upload(Data([1]), fields: [("response_format", "diarized_json"),
+                                                                     ("min_speakers", "2"), ("max_speakers", "3")]))
+        #expect(status == 200)
+        let request = try #require(await seen.request)
+        #expect(request.minSpeakers == 2 && request.maxSpeakers == 3)
+        for fields in [[("min_speakers", "0")], [("max_speakers", "two")], [("min_speakers", "3"), ("max_speakers", "2")]] {
+            let (status, _) = try await send(upload(Data([1]), fields: [("response_format", "diarized_json")] + fields))
+            #expect(status == 400)
+        }
+    }
+
     @Test func subtitles() async throws {
         let (_, srt) = try await send(upload(Data([1]), fields: [("response_format", "srt")]))
         #expect(String(decoding: srt, as: UTF8.self) == "1\n00:00:00,000 --> 00:00:01,500\nПривет, мир.\n\n")
