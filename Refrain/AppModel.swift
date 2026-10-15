@@ -36,6 +36,9 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private(set) var port = UserDefaults.standard.object(forKey: "port") as? Int ?? defaultPort
     var address: String { "http://127.0.0.1:\(port)/v1" }
 
+    /// Parakeet, the speaker model and Apple's analyzers run in Refrain's XPC service, which quits
+    /// when idle: what they load goes with it, and a crash in them doesn't take the server down.
+    @ObservationIgnored private let engine = Engine()
     @ObservationIgnored private var server: Task<Void, Never>?
     @ObservationIgnored private var tail: Task<Void, Never>?
     @ObservationIgnored private var running: UUID?
@@ -52,8 +55,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private func warmUp() {
         let system = ProcessInfo.processInfo.operatingSystemVersionString
         let models: [(name: String, key: String, ready: Bool, load: @Sendable () async throws -> Void)] = [
-            ("Parakeet", "warmedUpOn", Parakeet.isDownloaded, Parakeet.warmUp),
-            ("The speaker model", "speakersWarmedUpOn", Speakers.isDownloaded, Speakers.warmUp),
+            ("Parakeet", "warmedUpOn", Parakeet.isDownloaded, engine.warmUpParakeet),
+            ("The speaker model", "speakersWarmedUpOn", Speakers.isDownloaded, engine.warmUpSpeakers),
         ]
         for model in models where model.ready && UserDefaults.standard.string(forKey: model.key) != system {
             Task(priority: .background) {
@@ -125,9 +128,9 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                 running = nil
                 if case .transcribing = status { status = .ready }
             }
-            return try await Transcription.transcribe(file: request.file, language: request.language,
-                                                      prompt: request.prompt, keywords: request.keywords,
-                                                      speakers: request.speakers) { done, total in
+            return try await engine.transcribe(file: request.file, language: request.language,
+                                               prompt: request.prompt, keywords: request.keywords,
+                                               speakers: request.speakers) { done, total in
                 Task { @MainActor in
                     let model = AppModel.shared
                     // Late reports of a finished file don't bring its status back.
@@ -149,7 +152,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         downloadError = nil
         Task {
             do {
-                try await Parakeet.download { fraction in
+                try await engine.downloadParakeet { fraction in
                     Task { @MainActor in
                         if AppModel.shared.downloading != nil { AppModel.shared.downloading = fraction }
                     }
@@ -169,7 +172,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         downloadingSpeakers = true
         speakersError = nil
         Task {
-            do { try await Speakers.warmUp() } catch { speakersError = error.localizedDescription }
+            do { try await engine.warmUpSpeakers() } catch { speakersError = error.localizedDescription }
             downloadingSpeakers = false
             speakersDownloaded = Speakers.isDownloaded
         }
@@ -182,7 +185,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
 
     func deleteParakeet() {
         Task {
-            await Parakeet.delete()
+            await engine.deleteParakeet()
             parakeetDownloaded = Parakeet.isDownloaded
         }
     }

@@ -9,8 +9,8 @@ import Synchronization
 let log = Logger(subsystem: "dev.nikiomori.refrain", category: "transcription")
 
 /// What a file turned into. Times are seconds from the start of the file.
-public struct Transcript: Sendable, Equatable {
-    public struct Segment: Sendable, Equatable {
+public struct Transcript: Sendable, Equatable, Codable {
+    public struct Segment: Sendable, Equatable, Codable {
         public var start: TimeInterval
         public var end: TimeInterval
         public var text: String
@@ -42,7 +42,7 @@ public struct Transcript: Sendable, Equatable {
     }
 }
 
-public enum TranscriptionError: LocalizedError {
+public enum TranscriptionError: LocalizedError, Equatable, Codable {
     case unsupportedSystem
     case unsupportedLanguage(String)
     case unreadableAudio

@@ -11,13 +11,40 @@
 		5AEB0E8DE81CE8E5E0B18127 /* RefrainServer in Frameworks */ = {isa = PBXBuildFile; productRef = 157AD9A1663020E6E9430BAB /* RefrainServer */; };
 		993167D86CAD2EE8DEF64D42 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 35BFDB87C26C441F5DC72086 /* LICENSE */; };
 		C7B50A7469AB1561CFCFEA11 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */; };
+		E1A0000000000000000000A1 /* RefrainKit in Frameworks */ = {isa = PBXBuildFile; productRef = E1A0000000000000000000B1 /* RefrainKit */; };
+		E1A0000000000000000000A2 /* RefrainEngine.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = E1A0000000000000000000A3 /* RefrainEngine.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E1A0000000000000000000A4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5272ECFFD7E700CD5CF406B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1A0000000000000000000A5;
+			remoteInfo = RefrainEngine;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E1A0000000000000000000A6 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				E1A0000000000000000000A2 /* RefrainEngine.xpc in Embed XPC Services */,
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		317E8DCD93492EDD46319DE4 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		34D3C082003D108A3C18C35A /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		35BFDB87C26C441F5DC72086 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		8577B1F9B251E121BDF4EE00 /* whisper */ = {isa = PBXFileReference; lastKnownFileType = folder; name = whisper; path = .; sourceTree = SOURCE_ROOT; };
+		E1A0000000000000000000A3 /* RefrainEngine.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = RefrainEngine.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		F77D7669DBD76EE0337D706C /* Refrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Refrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,6 +52,11 @@
 		A1F0C2D3E4B5A6978899AABB /* Refrain */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Refrain;
+			sourceTree = "<group>";
+		};
+		E1A0000000000000000000A7 /* Engine */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Engine;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +71,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1A0000000000000000000A8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1A0000000000000000000A1 /* RefrainKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -50,6 +90,7 @@
 				C34339377AEF0DA63EB999E8 /* Config */,
 				71369FE68363A345F10263A3 /* Packages */,
 				A1F0C2D3E4B5A6978899AABB /* Refrain */,
+				E1A0000000000000000000A7 /* Engine */,
 				5550B5E78008C6183E496755 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -58,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				F77D7669DBD76EE0337D706C /* Refrain.app */,
+				E1A0000000000000000000A3 /* RefrainEngine.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,10 +130,12 @@
 				393C4475FC06D72575460506 /* Sources */,
 				63B8A62E6DF6CF275F5237B3 /* Resources */,
 				3FCF59DDD3E947667E9D65F7 /* Frameworks */,
+				E1A0000000000000000000A6 /* Embed XPC Services */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E1A0000000000000000000A9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A1F0C2D3E4B5A6978899AABB /* Refrain */,
@@ -104,6 +148,28 @@
 			productName = Refrain;
 			productReference = F77D7669DBD76EE0337D706C /* Refrain.app */;
 			productType = "com.apple.product-type.application";
+		};
+		E1A0000000000000000000A5 /* RefrainEngine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1A0000000000000000000AA /* Build configuration list for PBXNativeTarget "RefrainEngine" */;
+			buildPhases = (
+				E1A0000000000000000000AB /* Sources */,
+				E1A0000000000000000000A8 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E1A0000000000000000000A7 /* Engine */,
+			);
+			name = RefrainEngine;
+			packageProductDependencies = (
+				E1A0000000000000000000B1 /* RefrainKit */,
+			);
+			productName = RefrainEngine;
+			productReference = E1A0000000000000000000A3 /* RefrainEngine.xpc */;
+			productType = "com.apple.product-type.xpc-service";
 		};
 /* End PBXNativeTarget section */
 
@@ -139,6 +205,7 @@
 			projectRoot = "";
 			targets = (
 				72955A1B38AF6866576F460B /* Refrain */,
+				E1A0000000000000000000A5 /* RefrainEngine */,
 			);
 		};
 /* End PBXProject section */
@@ -163,7 +230,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1A0000000000000000000AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E1A0000000000000000000A9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1A0000000000000000000A5 /* RefrainEngine */;
+			targetProxy = E1A0000000000000000000A4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		549D2CD0BCE69EBB6AA39A01 /* Debug */ = {
@@ -171,6 +253,7 @@
 			baseConfigurationReference = 317E8DCD93492EDD46319DE4 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -245,6 +328,7 @@
 			baseConfigurationReference = 317E8DCD93492EDD46319DE4 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -320,7 +404,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Refrain;
 				SDKROOT = macosx;
 			};
@@ -339,9 +423,35 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.nikiomori.refrain;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Refrain;
 				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E1A0000000000000000000AC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Engine.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "MIT License";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).engine";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		E1A0000000000000000000AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Engine.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "MIT License";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).engine";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
@@ -366,6 +476,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		E1A0000000000000000000AA /* Build configuration list for PBXNativeTarget "RefrainEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1A0000000000000000000AC /* Debug */,
+				E1A0000000000000000000AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -381,6 +500,10 @@
 			productName = RefrainServer;
 		};
 		C081CB534DE3A6F7632EFE1F /* RefrainKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RefrainKit;
+		};
+		E1A0000000000000000000B1 /* RefrainKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RefrainKit;
 		};

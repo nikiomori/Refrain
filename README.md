@@ -88,12 +88,12 @@ Release build, MacBook Pro M4 Max:
 
 | | CPU | Memory |
 |---|---|---|
-| Waiting in the menu bar | 0.005% (no timers; the socket waits) | 14 MB, ~50 MB once Parakeet has been used |
-| An hour of Russian through Parakeet | ~340% for 8.5 s | ~110 MB at most, ~95 MB while the model stays loaded |
-| The same hour with voices told apart (`diarized_json`) | ~300% for 17 s | ~630 MB at most, for a few seconds |
+| Waiting in the menu bar | 0.005% (no timers; the socket waits) | 14 MB, 15 MB after use once its engine has quit |
+| An hour of Russian through Parakeet | ~340% for 8.5 s | in the engine, ~110 MB at most, ~95 MB while the model stays loaded |
+| The same hour with voices told apart (`diarized_json`) | ~300% for 17 s | in the engine, ~630 MB at most, for a few seconds |
 | An hour of English through Apple SpeechTranscriber | ~30% for 10 s, plus macOS's speech service | +13 MB |
 
-Memory is the physical footprint, as Activity Monitor shows it. The app is 13 MB. The menu bar item and the windows are AppKit's own; SwiftUI draws the windows' contents, loaded when one opens. Parakeet stays loaded for five minutes after a request, then unloads. Parakeet and the speaker model run on the Neural Engine, never the GPU. A long file is never read into memory whole: Apple's analyzers get it a piece at a time, as they ask for it, and Parakeet and the speaker model get it converted once to 16 kHz mono, every channel mixed in, in a temporary file. A file longer than a minute is shared among up to four of Apple's analyzers at once, cut at quiet moments: nearly four times as fast, with the same accuracy. After an update of macOS, Refrain loads Parakeet once in the background, so the first request doesn't wait the ~11 s it takes the Neural Engine to compile it.
+Memory is the physical footprint, as Activity Monitor shows it. The app is 24 MB. The menu bar item and the windows are AppKit's own; SwiftUI draws the windows' contents, loaded when one opens. The engines run in a process of their own, RefrainEngine, which macOS starts at the first request and which quits after five idle minutes: what the models and CoreML leave behind goes with it, rather than staying in the app (25–50 MB of it otherwise), and a crash in them fails one request instead of stopping the server. The first request after it has quit takes ~0.3 s longer. Parakeet and the speaker model run on the Neural Engine, never the GPU. A long file is never read into memory whole: Apple's analyzers get it a piece at a time, as they ask for it, and Parakeet and the speaker model get it converted once to 16 kHz mono, every channel mixed in, in a temporary file. A file longer than a minute is shared among up to four of Apple's analyzers at once, cut at quiet moments: nearly four times as fast, with the same accuracy. After an update of macOS, Refrain loads Parakeet once in the background, so the first request doesn't wait the ~11 s it takes the Neural Engine to compile it.
 
 ## Privacy
 
@@ -110,7 +110,7 @@ open Refrain.xcodeproj          # or: xcodebuild -scheme Refrain build
 swift test                       # server and engine tests, no models needed
 ```
 
-`Package.swift` holds `RefrainKit` (engines, choice by language, timestamps) and `RefrainServer` (HTTP). The app in `Refrain/` is the menu bar and settings around them. To sign with your own team, put `DEVELOPMENT_TEAM` and `CODE_SIGN_IDENTITY` in `Config/Local.xcconfig`.
+`Package.swift` holds `RefrainKit` (engines, choice by language, timestamps) and `RefrainServer` (HTTP). The app in `Refrain/` is the menu bar and settings around them; `Engine/` is its XPC service, where the engines run. To sign with your own team, put `DEVELOPMENT_TEAM` and `CODE_SIGN_IDENTITY` in `Config/Local.xcconfig`.
 
 ## License
 
