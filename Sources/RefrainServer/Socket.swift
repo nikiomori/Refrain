@@ -113,16 +113,18 @@ final class Socket: @unchecked Sendable {
         } else {
             source = Source(DispatchSource.makeWriteSource(fileDescriptor: fd, queue: .global()))
         }
-        let waiting = OSAllocatedUnfairLock<CheckedContinuation<Void, Error>?>(initialState: nil)
+        let fired = OSAllocatedUnfairLock(initialState: false)
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                waiting.withLock { $0 = continuation }
-                // Ready: the continuation goes on before the cancel handler, which then finds none.
+                // Resumed from the cancel handler alone, which runs once and after the event handler:
+                // the socket may close right after, and libdispatch needs it open until then.
                 source.value.setEventHandler {
-                    waiting.withLock { $0.take() }?.resume()
+                    fired.withLock { $0 = true }
                     source.value.cancel()
                 }
-                source.value.setCancelHandler { waiting.withLock { $0.take() }?.resume(throwing: CancellationError()) }
+                source.value.setCancelHandler {
+                    if fired.withLock({ $0 }) { continuation.resume() } else { continuation.resume(throwing: CancellationError()) }
+                }
                 source.value.resume()
             }
         } onCancel: {

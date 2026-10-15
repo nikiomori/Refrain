@@ -25,7 +25,8 @@ public struct Remote: Sendable {
     func forward(_ form: Multipart, file: URL) async throws -> Response {
         let boundary = "refrain-\(UUID().uuidString)"
         var head = ""
-        for (name, value) in form.fields where name != "model" {
+        // A name that would break out of its header line is dropped.
+        for (name, value) in form.fields where name != "model" && !name.contains(where: { "\r\n\"".contains($0) }) {
             head += "--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n"
         }
         head += "--\(boundary)\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n\(model)\r\n"

@@ -35,7 +35,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             }
         }
 
-        if !UserDefaults.standard.bool(forKey: "onboarded") { showWelcome() }
+        if !UserDefaults.standard.bool(forKey: "onboarded") {
+            showWelcome()
+        } else if AppModel.shared.menuBarIcon != .always,
+                  NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword: keyAEPropData)?
+                      .enumCodeValue != keyAELaunchedAsLogInItem {
+            // Opened from Finder or Spotlight with no menu bar item to show for it.
+            showSettings()
+        }
     }
 
     /// Opened again from Finder or Spotlight: the menu bar item may be out of reach (behind

@@ -9,7 +9,7 @@ An open-source speech-to-text engine for macOS. It lives in the menu bar and tur
 
 <p align="center">macOS 26 or later · English and Russian · free, MIT · 0.1</p>
 
-There is no signed release yet: build it from source (below). Signed releases and Homebrew come with 1.0.
+Download it from [Releases](https://github.com/nikiomori/Refrain/releases/latest): open the zip and move Refrain.app to Applications. It's signed with Developer ID and notarized by Apple. Or build it from source (below).
 
 <p align="center">
   <img src="docs/media/menu.png" width="335" alt="The Refrain menu: transcribing 12:30 of 1:02:03, its address, Copy Address, Settings and Quit">
@@ -107,7 +107,7 @@ Memory is the physical footprint, as Activity Monitor shows it. The app is 24 MB
 
 ## Privacy
 
-- Refrain listens on `127.0.0.1` only. `Host` must be `127.0.0.1` or `localhost` (no DNS rebinding), a request with a web page's `Origin` is refused, and there are no CORS headers: web pages can't use it.
+- Refrain listens on `127.0.0.1` only. `Host` must be `127.0.0.1`, `localhost` or Docker's `host.docker.internal` (no DNS rebinding), a request with a web page's `Origin` is refused, and there are no CORS headers: web pages can't use it.
 - The upload goes to a temporary file that is deleted once the response is sent; whatever a crash leaves behind is deleted at the next launch. No text is stored or logged: the log holds durations and processing times.
 - The only network traffic is Parakeet's and the speaker model's downloads, when you ask for them, and the requests that name another service's model (Settings › Services), which go to that service with its key. Apple's language packs are downloaded by macOS.
 

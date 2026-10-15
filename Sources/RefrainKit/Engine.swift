@@ -189,9 +189,10 @@ public final class EngineService: NSObject, NSXPCListenerDelegate, EngineProtoco
 
     /// Called with the lock held.
     private func armTimer() {
-        timer = Task { [idle, quit] in
+        timer = Task { [idle, quit, lock] in
             try? await Task.sleep(for: idle)
-            if !Task.isCancelled { quit() }
+            // Under the lock, as `run` cancels this: a job that came during the sleep keeps it alive.
+            lock.withLock { if !Task.isCancelled { quit() } }
         }
     }
 

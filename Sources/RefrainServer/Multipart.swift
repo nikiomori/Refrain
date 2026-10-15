@@ -22,6 +22,14 @@ struct Multipart {
 
     init(body: URL, boundary: String, fileDirectory: URL) throws {
         let data = try Data(contentsOf: body, options: .alwaysMapped)
+        // A body that breaks after its file part doesn't leave the audio on disk.
+        do { try parse(data, boundary: boundary, fileDirectory: fileDirectory) } catch {
+            file.map { try? FileManager.default.removeItem(at: $0) }
+            throw error
+        }
+    }
+
+    private mutating func parse(_ data: Data, boundary: String, fileDirectory: URL) throws {
         let malformed = HTTPError(400, "The multipart body is malformed.")
         try data.withUnsafeBytes { bytes in
             let delimiter = Array("\r\n--\(boundary)".utf8)

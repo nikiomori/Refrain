@@ -37,10 +37,16 @@ public enum Speakers {
         try await diarizer.run { _ in }
     }
 
+    /// None when no voice speaks long enough to tell (a muted side, one "yeah"): the words then
+    /// come back as one phrase rather than as an error.
     static func turns(in file: URL) async throws -> [Turn] {
         try await diarizer.run { diarizer in
-            try await diarizer.process(file).segments.map {
-                Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
+            do {
+                return try await diarizer.process(file).segments.map {
+                    Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
+                }
+            } catch OfflineDiarizationError.noSpeechDetected {
+                return []
             }
         }
     }
@@ -66,7 +72,8 @@ public enum Speakers {
         }
 
         private func load() async throws -> Unshared {
-            if let loaded { return loaded }
+            // Deleted from Settings since: the Download button downloads again.
+            if let loaded, Speakers.isDownloaded { return loaded }
             let diarizer = OfflineDiarizerManager()
             try await diarizer.prepareModels(configuration: Speakers.neuralEngine)
             loaded = Unshared(value: diarizer)

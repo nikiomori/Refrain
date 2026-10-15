@@ -50,6 +50,7 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
 
         /// Its models as the server forwards them; none until it has a name, an address and a model.
         var remotes: [Remote] {
+            let name = name.trimmingCharacters(in: .whitespaces)
             guard !name.isEmpty, let url = URL(string: url.trimmingCharacters(in: .whitespaces)),
                   url.scheme == "https" || url.scheme == "http", url.host() != nil else { return [] }
             let account = id.uuidString
@@ -70,9 +71,16 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         didSet { UserDefaults.standard.set(try? JSONEncoder().encode(providers), forKey: "providers") }
     }
 
+    /// The same preset again, for another account, is `openai-2`: its models' names stay apart.
     func addProvider(_ preset: Provider) {
         var provider = preset
         provider.id = UUID()
+        let base = provider.name
+        var count = 1
+        while !base.isEmpty, providers.contains(where: { $0.name == provider.name }) {
+            count += 1
+            provider.name = "\(base)-\(count)"
+        }
         providers.append(provider)
     }
 
@@ -175,7 +183,8 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                     let model = AppModel.shared
                     // Late reports of a finished file don't bring its status back.
                     guard model.running == id else { return }
-                    if model.status != .transcribing { model.status = .transcribing }
+                    // A port that failed stays said, through Shortcuts' jobs too.
+                    if model.status == .ready { model.status = .transcribing }
                     model.progress = (done, total)
                 }
             }
@@ -269,7 +278,8 @@ nonisolated enum Keychain {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return }
         var item = query(account)
         item[kSecValueData as String] = Data(value.utf8)
-        SecItemAdd(item as CFDictionary, nil)
+        let status = SecItemAdd(item as CFDictionary, nil)
+        if status != errSecSuccess { log.error("Can't keep a service's key: \(status)") }
     }
 }
 

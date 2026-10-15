@@ -171,16 +171,17 @@ private struct ParakeetState: View {
 
 /// Other services' models, which apps reach through Refrain beside this Mac's own.
 struct ServiceSettings: View {
-    @Bindable var model: AppModel
+    let model: AppModel
 
     var body: some View {
         Form {
-            ForEach($model.providers) { $provider in
+            ForEach(model.providers) { provider in
+                let edit = binding(provider.id)
                 Section {
-                    TextField("Name", text: $provider.name, prompt: Text(verbatim: "groq"))
-                    TextField("Address", text: $provider.url, prompt: Text(verbatim: "https://api.groq.com/openai/v1"))
+                    TextField("Name", text: edit.name, prompt: Text(verbatim: "groq"))
+                    TextField("Address", text: edit.url, prompt: Text(verbatim: "https://api.groq.com/openai/v1"))
                     KeyField(account: provider.id.uuidString)
-                    TextField("Models", text: $provider.models, prompt: Text(verbatim: "whisper-large-v3-turbo"))
+                    TextField("Models", text: edit.models, prompt: Text(verbatim: "whisper-large-v3-turbo"))
                     Button("Remove", role: .destructive) { model.removeProvider(provider) }
                 } footer: {
                     let names = provider.remotes.map(\.id)
@@ -209,6 +210,16 @@ struct ServiceSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// By id rather than by index: a field still being edited as its service is removed writes
+    /// to nothing, instead of past the end of the list.
+    private func binding(_ id: UUID) -> Binding<AppModel.Provider> {
+        Binding {
+            model.providers.first { $0.id == id } ?? .init(name: "", url: "", models: "")
+        } set: { provider in
+            if let index = model.providers.firstIndex(where: { $0.id == id }) { model.providers[index] = provider }
+        }
     }
 }
 

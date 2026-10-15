@@ -181,6 +181,19 @@ import Testing
         #expect(await seen.cancelled)
     }
 
+    /// A body that breaks after its file part: the audio already copied out is deleted with the error.
+    @Test func aMalformedBodyLeavesNoAudio() throws {
+        let folder = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let body = folder.appending(path: "body")
+        try Data("--B\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.wav\"\r\n\r\nRIFF\r\n--B\r\nbroken".utf8).write(to: body)
+        let audio = folder.appending(path: "audio")
+        try FileManager.default.createDirectory(at: audio, withIntermediateDirectories: true)
+        #expect(throws: HTTPError.self) { try Multipart(body: body, boundary: "B", fileDirectory: audio) }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: audio.path).isEmpty)
+    }
+
     private func upload(_ audio: Data, fields: [(String, String)], extraHeaders: String = "") -> Data {
         let boundary = "----test\(UUID().uuidString)"
         var body = Data()
@@ -200,7 +213,15 @@ import Testing
         let connection = NetworkConnection(to: .hostPort(host: "127.0.0.1", port: .init(rawValue: port)!)) { TCP() }
         try await connection.send(request)
         var response = Data()
-        while case let chunk = try await connection.receive(atMost: 1 << 20).content, !chunk.isEmpty { response += chunk }
+        while true {
+            do {
+                let chunk = try await connection.receive(atMost: 1 << 20).content
+                if chunk.isEmpty { break }
+                response += chunk
+            } catch where !response.isEmpty {
+                break  // at the end, Network sometimes throws ENODATA rather than reading nothing
+            }
+        }
         // A 100 Continue may come first.
         var text = String(decoding: response, as: UTF8.self)
         if text.hasPrefix("HTTP/1.1 100") { text = String(text.split(separator: "\r\n\r\n", maxSplits: 1)[1]) }
