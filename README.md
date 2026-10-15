@@ -88,7 +88,7 @@ Release build, MacBook Pro M4 Max:
 
 | | CPU | Memory |
 |---|---|---|
-| Waiting in the menu bar | 0.005% (no timers; the socket waits) | 14 MB, 15 MB after use once its engine has quit |
+| Waiting in the menu bar | 0.005% (no timers; the socket waits) | 13.5 MB, ~15 MB after use once its engine has quit |
 | An hour of Russian through Parakeet | ~340% for 8.5 s | in the engine, ~110 MB at most, ~95 MB while the model stays loaded |
 | The same hour with voices told apart (`diarized_json`) | ~300% for 17 s | in the engine, ~630 MB at most, for a few seconds |
 | An hour of English through Apple SpeechTranscriber | ~30% for 10 s, plus macOS's speech service | +13 MB |

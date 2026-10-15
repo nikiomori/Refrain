@@ -1,6 +1,5 @@
 import Foundation
 import RefrainKit
-import Network
 
 /// What a `POST /v1/audio/transcriptions` asks for. `file` is a temporary copy of the upload,
 /// deleted once the response is sent.
@@ -22,12 +21,12 @@ public struct TranscriptionRequest: Sendable {
     }
 }
 
-/// The OpenAI-compatible endpoint on 127.0.0.1, one HTTP/1.1 request per connection.
+/// The OpenAI-compatible endpoint on 127.0.0.1, one HTTP/1.1 request per connection, on BSD
+/// sockets: Network.framework's listener held ~0.3 MB at rest for one loopback port.
 ///
 /// Web pages are kept out: only the loopback address listens, `Host` must
 /// name it (no DNS rebinding), a browser's `Origin` is refused, and there are no CORS headers.
 /// Native clients and Electron (`app://`) send neither.
-@available(macOS 26.0, *)
 public final class Server: Sendable {
     /// Big enough for an hour of uncompressed stereo; the file is streamed to disk, never held.
     static let maxBody = 2 << 30
@@ -36,28 +35,30 @@ public final class Server: Sendable {
     /// what a crash left behind is someone's voice.
     public static let uploads = Transcription.scratch
 
-    public var port: UInt16 { listener.port?.rawValue ?? 0 }
+    /// The one it listens on; the free one picked for 0.
+    public let port: UInt16
 
-    private let listener: NetworkListener<TCP>
+    private let listener: Socket
     private let transcribe: @Sendable (TranscriptionRequest) async throws -> Transcript
 
-    /// `port` 0 picks a free one (tests). `onState` hears whether the port could be had:
-    /// `.failed(.posix(.EADDRINUSE))` when another app has it.
-    public init(port: UInt16,
-                transcribe: @escaping @Sendable (TranscriptionRequest) async throws -> Transcript,
-                onState: @escaping @Sendable (NetworkListener<TCP>.State) -> Void) throws {
-        listener = try NetworkListener(using: .parameters { TCP() }
-            .localEndpoint(.hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: port) ?? .any)))
-            .onStateUpdate { _, state in onState(state) }
+    /// Listening from here on; `port` 0 picks a free one (tests). Throws `POSIXError.EADDRINUSE`
+    /// when another app has the port.
+    public init(port: UInt16, transcribe: @escaping @Sendable (TranscriptionRequest) async throws -> Transcript) throws {
+        listener = try Socket.listen(port: port)
+        self.port = listener.port
         self.transcribe = transcribe
     }
 
     /// Serves until the task is cancelled, which also cuts off the requests in progress.
-    public func run() async throws {
-        try await listener.run { [self] connection in await serve(connection) }
+    public func run() async {
+        await withDiscardingTaskGroup { group in
+            while let connection = try? await listener.accept() {
+                group.addTask { await self.serve(connection) }
+            }
+        }
     }
 
-    private func serve(_ connection: NetworkConnection<TCP>) async {
+    private func serve(_ connection: Socket) async {
         let response: Response
         do {
             response = try await respond(on: connection)
@@ -66,14 +67,15 @@ public final class Server: Sendable {
         } catch {
             response = .error(500, error.localizedDescription)  // the disk, or a client already gone
         }
-        try? await connection.send(response.serialized, endOfStream: true)
+        try? await connection.send(response.serialized)
+        await connection.finish()
     }
 
-    private func respond(on connection: NetworkConnection<TCP>) async throws -> Response {
+    private func respond(on connection: Socket) async throws -> Response {
         var buffer = Data()
         while buffer.firstRange(of: Data("\r\n\r\n".utf8)) == nil {
             guard buffer.count < 16_384 else { throw HTTPError(431, "The request headers are too large.") }
-            let chunk = try await connection.receive(atMost: 16_384).content
+            let chunk = try await connection.receive(atMost: 16_384)
             guard !chunk.isEmpty else { throw HTTPError(400, "The request ended early.") }
             buffer.append(chunk)
         }
@@ -112,7 +114,7 @@ public final class Server: Sendable {
         var received = buffer.count - end.upperBound
         try handle.write(contentsOf: buffer[end.upperBound...])
         while received < length {
-            let chunk = try await connection.receive(atMost: min(1 << 20, length - received)).content
+            let chunk = try await connection.receive(atMost: min(1 << 20, length - received))
             guard !chunk.isEmpty else { throw HTTPError(400, "The upload ended early.") }
             try handle.write(contentsOf: chunk)
             received += chunk.count
@@ -157,17 +159,18 @@ public final class Server: Sendable {
     /// `work`, for as long as the client waits for it. One that hangs up (a timeout, an SDK's
     /// retry, a newer take) cancels it rather than leaving it to hold up the queue: a client sends
     /// nothing after its request, so the connection's next read ends only when it's gone.
-    private func whileConnected<T: Sendable>(_ connection: NetworkConnection<TCP>,
+    private func whileConnected<T: Sendable>(_ connection: Socket,
                                              _ work: @escaping @Sendable () async throws -> T) async throws -> T {
-        let task = Task(operation: work)
-        let watcher = Task {
-            while let chunk = try? await connection.receive(atMost: 1 << 16).content, !chunk.isEmpty {}
-            task.cancel()
+        try await withThrowingTaskGroup(of: T?.self) { group in
+            group.addTask { try await work() }
+            group.addTask {
+                while let chunk = try? await connection.receive(atMost: 1 << 16), !chunk.isEmpty {}
+                return nil
+            }
+            defer { group.cancelAll() }
+            guard let result = try await group.next() ?? nil else { throw CancellationError() }
+            return result
         }
-        // Not cancelled now: cancelling a read closes the connection, the response unsent. The
-        // client closes it once the response is in; one that doesn't is cut off after a while.
-        defer { Task { try? await Task.sleep(for: .seconds(10)); watcher.cancel() } }
-        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
 }
 

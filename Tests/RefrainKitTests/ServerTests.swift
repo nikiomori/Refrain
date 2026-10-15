@@ -11,8 +11,6 @@ import Testing
     let seen = Seen()
 
     init() async throws {
-        guard #available(macOS 26.0, *) else { throw TranscriptionError.unsupportedSystem }
-        let ready = AsyncStream.makeStream(of: NetworkListener<TCP>.State.self)
         let seen = seen
         let server = try Server(port: 0, transcribe: { request in
             await seen.record(request)
@@ -22,10 +20,16 @@ import Testing
             return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.", speaker: "B")],
                               words: [.init(start: 0, end: 0.6, text: "Привет,"), .init(start: 0.7, end: 1.5, text: "мир.")],
                               language: "ru", duration: 1.5)
-        }, onState: { ready.continuation.yield($0) })
-        Task { try? await server.run() }
-        for await state in ready.stream { #expect(state == .ready); break }
+        })
+        Task { await server.run() }
         port = server.port
+    }
+
+    /// Settings say which port is taken by another app, rather than listening on another.
+    @Test func aTakenPortIsSaidSo() throws {
+        #expect(throws: POSIXError(.EADDRINUSE)) {
+            try Server(port: port) { _ in throw TranscriptionError.unreadableAudio }
+        }
     }
 
     @Test func transcribesAMultipartUpload() async throws {

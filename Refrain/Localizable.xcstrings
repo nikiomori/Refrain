@@ -361,16 +361,6 @@
         }
       }
     },
-    "Starting…" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запуск…"
-          }
-        }
-      }
-    },
     "Status" : {
       "localizations" : {
         "ru" : {

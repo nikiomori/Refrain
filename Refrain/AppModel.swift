@@ -1,7 +1,6 @@
 import AppKit
 import RefrainKit
 import RefrainServer
-import Network
 import Observation
 import os
 
@@ -12,13 +11,12 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     static let shared = AppModel()
 
     enum Status: Equatable {
-        case starting
         case ready
         case transcribing
         case failed(String)
     }
 
-    private(set) var status = Status.starting
+    private(set) var status = Status.ready
     /// Seconds of audio done and the file's length, while transcribing. Apart from `status`, so
     /// the menu bar icon, which reads only that, isn't drawn anew at every step.
     private(set) var progress: (done: TimeInterval, of: TimeInterval) = (0, 0)
@@ -85,34 +83,20 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     private func listen() {
         server?.cancel()
         server = nil
-        status = .starting
         guard let port = UInt16(exactly: port), port >= 1024 else {
             status = .failed(String(localized: "Choose a port from 1024 to 65535."))
             return
         }
         do {
-            let server = try Server(port: port, transcribe: { [self] request in try await transcribe(request) }, onState: { state in
-                Task { @MainActor in AppModel.shared.serverChanged(state, port: port) }
-            })
-            self.server = Task { try? await server.run() }  // a failure reaches serverChanged too
-        } catch {
-            status = .failed(error.localizedDescription)
-        }
-    }
-
-    private func serverChanged(_ state: NetworkListener<TCP>.State, port: UInt16) {
-        guard port == self.port else { return }  // a server already replaced
-        switch state {
-        case .ready:
-            if case .starting = status { status = .ready }
+            let server = try Server(port: port, transcribe: { [self] request in try await transcribe(request) })
+            self.server = Task { await server.run() }
+            status = .ready
             log.notice("Listening on 127.0.0.1:\(port)")
-        case .failed(let error):
-            status = .failed(error == .posix(.EADDRINUSE)
+        } catch {
+            status = .failed((error as? POSIXError)?.code == .EADDRINUSE
                 ? String(localized: "Port \(String(port)) is used by another app.")
                 : error.localizedDescription)
             log.error("Can't listen on \(port): \(error.localizedDescription, privacy: .public)")
-        default:
-            break
         }
     }
 
@@ -198,7 +182,6 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
 
     var statusText: String {
         switch status {
-        case .starting: String(localized: "Starting…")
         case .ready: String(localized: "Ready")
         case .failed(let message): message
         case .transcribing:
