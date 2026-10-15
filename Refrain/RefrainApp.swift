@@ -14,8 +14,8 @@ enum RefrainApp {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
     private var item: NSStatusItem!
-    private let statusLine = NSMenuItem()
-    private let addressLine = NSMenuItem()
+    private lazy var statusLine = NSMenuItem()
+    private lazy var addressLine = NSMenuItem()
     /// The menu's lines kept current while it's open; closed, it costs nothing.
     private var following: Task<Void, Never>?
     private var settings: NSWindow?
@@ -26,13 +26,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
         let menu = NSMenu()
         menu.delegate = self
-        menu.items = [
-            statusLine, addressLine,
-            NSMenuItem(String(localized: "Copy Address"), #selector(copyAddress), target: self),
-            .separator(),
-            NSMenuItem(String(localized: "Settings…"), #selector(showSettings), ",", target: self),
-            NSMenuItem(String(localized: "Quit Refrain"), #selector(NSApplication.terminate(_:)), "q"),
-        ]
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.menu = menu
         Task {
@@ -49,6 +42,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         showSettings()
         return true
+    }
+
+    /// Its items are made the first time it opens: made at launch, they held ~0.1 MB at rest.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu.items.isEmpty else { return }
+        menu.items = [
+            statusLine, addressLine,
+            NSMenuItem(String(localized: "Copy Address"), #selector(copyAddress), target: self),
+            .separator(),
+            NSMenuItem(String(localized: "Settings…"), #selector(showSettings), ",", target: self),
+            NSMenuItem(String(localized: "Quit Refrain"), #selector(NSApplication.terminate(_:)), "q"),
+        ]
     }
 
     func menuWillOpen(_ menu: NSMenu) {
