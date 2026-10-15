@@ -50,10 +50,11 @@ public enum TranscriptionError: LocalizedError, Equatable, Codable {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupportedSystem: "Transcription needs macOS 26 or later."
-        case .unsupportedLanguage(let code): "No speech model on this Mac knows the language “\(code)”."
-        case .unreadableAudio: "The file isn't audio that macOS can read (m4a, mp3, wav, caf, mp4…)."
-        case .noSpeakerModel: "Telling voices apart needs the speaker model: download it in Refrain's Settings, under Models."
+        case .unsupportedSystem: String(localized: "Transcription needs macOS 26 or later.", bundle: .module)
+        case .unsupportedLanguage(let code): String(localized: "No speech model on this Mac knows the language “\(code)”.", bundle: .module)
+        case .unreadableAudio: String(localized: "The file isn't audio that macOS can read (m4a, mp3, wav, caf, mp4…).", bundle: .module)
+        case .noSpeakerModel:
+            String(localized: "Telling voices apart needs the speaker model: download it in Refrain's Settings, under Models.", bundle: .module)
         }
     }
 }
@@ -112,7 +113,10 @@ public enum Transcription {
                                                                     hints: hints(keywords: keywords, prompt: prompt), progress: progress)
         }
         text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if speakers { segments = Speakers.phrases(words, turns: try await turns) }
+        if speakers {
+            let spaced = if case .apple(let locale, _) = engine { Self.spaced(locale) } else { true }
+            segments = Speakers.phrases(words, turns: try await turns, separator: spaced ? " " : "")
+        }
         if segments.isEmpty, !text.isEmpty { segments = [.init(start: 0, end: duration, text: text)] }
         let (name, code): (String, String?) = switch engine {
         case .parakeet(let code): ("Parakeet, \(code ?? "auto")", code)
@@ -296,15 +300,19 @@ public enum Transcription {
             return try await group.reduce(into: []) { $0.append($1) }.sorted { $0.0 < $1.0 }.map(\.1)
         }
         return parts.reduce(into: ("", [], [])) { all, part in
-            // Parts meet with a space unless one is there already; Chinese, Japanese and Thai take none.
-            if let last = all.text.last, let first = part.text.first, !last.isWhitespace, !first.isWhitespace,
-               !["zh", "ja", "yue", "th"].contains(locale.language.languageCode?.identifier ?? "") {
+            // Parts meet with a space unless one is there already, or the language writes none.
+            if let last = all.text.last, let first = part.text.first, !last.isWhitespace, !first.isWhitespace, spaced(locale) {
                 all.text += " "
             }
             all.text += part.text
             all.segments += part.segments
             all.words += part.words
         }
+    }
+
+    /// Whether words are written apart: not in Chinese, Japanese or Thai.
+    static func spaced(_ locale: Locale) -> Bool {
+        !["zh", "ja", "yue", "th"].contains(locale.language.languageCode?.identifier ?? "")
     }
 
     /// Frames to cut the file at for `parts` analyzers, from 0 to its length: the even shares,

@@ -14,12 +14,15 @@ struct GeneralSettings: View {
                 // Not a switch: on macOS 27 each one shown holds ~265 MB of graphics memory for a second.
                 .toggleStyle(.checkbox)
                 .onChange(of: openAtLogin) { _, on in
+                    guard on != (SMAppService.mainApp.status == .enabled) else { return }  // set back below
                     do {
                         try on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
                     } catch {
                         log.error("Login item: \(error.localizedDescription, privacy: .public)")
-                        openAtLogin = SMAppService.mainApp.status == .enabled
                     }
+                    // Turned off in System Settings before: it waits there to be allowed.
+                    if SMAppService.mainApp.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+                    openAtLogin = SMAppService.mainApp.status == .enabled
                 }
 
             Section {

@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             statusLine, addressLine,
             NSMenuItem(String(localized: "Copy Address"), #selector(copyAddress), target: self),
             .separator(),
+            NSMenuItem(String(localized: "About Refrain"), #selector(showAbout), target: self),
             NSMenuItem(String(localized: "Settings…"), #selector(showSettings), ",", target: self),
             NSMenuItem(String(localized: "Quit Refrain"), #selector(NSApplication.terminate(_:)), "q"),
         ]
@@ -81,6 +82,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     @objc private func copyAddress() {
         AppModel.shared.copyAddress()
+    }
+
+    /// AppKit's own panel: the icon, the version, the license, and where the code is.
+    @objc private func showAbout() {
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
+        let link = NSAttributedString(string: "github.com/nikiomori/Refrain", attributes: [
+            .link: URL(string: "https://github.com/nikiomori/Refrain")!,
+            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+            .paragraphStyle: centered,
+        ])
+        NSApp.activate()
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: link])
     }
 
     /// General, Models and Services as toolbar tabs, each as tall as its content, like Apple's settings.

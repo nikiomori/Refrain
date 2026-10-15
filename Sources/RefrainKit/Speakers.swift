@@ -90,7 +90,7 @@ public enum Speakers {
     /// most, or the nearest one when none does (a word heard between turns). Voices are "A",
     /// "B"… in the order they first speak, as OpenAI labels them.
     /// ponytail: words × turns, ~25 ms for an hour (M4 Max); a sweep if that ever shows.
-    static func phrases(_ words: [Transcript.Segment], turns: [Turn]) -> [Transcript.Segment] {
+    static func phrases(_ words: [Transcript.Segment], turns: [Turn], separator: String = " ") -> [Transcript.Segment] {
         guard !turns.isEmpty, !words.isEmpty else { return [] }
         var letters: [String: String] = [:]
         let voices = words.map { word in
@@ -108,7 +108,7 @@ public enum Speakers {
         var phrases: [Transcript.Segment] = []
         var start = 0
         for end in 1...words.count where end == words.count || voices[end] != voices[start] {
-            phrases += Parakeet.segments(from: Array(words[start..<end])).map {
+            phrases += Parakeet.segments(from: Array(words[start..<end]), separator: separator).map {
                 .init(start: $0.start, end: $0.end, text: $0.text, speaker: voices[start])
             }
             start = end

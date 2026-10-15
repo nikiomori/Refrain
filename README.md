@@ -64,7 +64,7 @@ Settings › Services adds another OpenAI-compatible service: OpenAI, Groq, Mist
 curl http://127.0.0.1:8178/v1/audio/transcriptions -F file=@call.m4a -F model=groq/whisper-large-v3-turbo
 ```
 
-The request goes on as it came, but for `model`, which becomes the service's own name for it, and the service's answer comes back as is, its errors included. These requests don't wait in the queue, which is for this Mac's engines, and the service's limits apply: file size, rate, formats.
+The request goes on as it came, but for `model`, which becomes the service's own name for it, and the service's answer comes back as is, its errors included. These requests don't wait in the queue, which is for this Mac's engines, and the service's limits apply: file size, rate, formats. A server on the local network can be reached over `http://` (`http://gpu-box:8000/v1`, a `.local` name or an IP address); others need `https://`.
 
 <p align="center">
 <picture>

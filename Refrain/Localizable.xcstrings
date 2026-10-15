@@ -11,6 +11,16 @@
         }
       }
     },
+    "About Refrain" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "О программе Refrain"
+          }
+        }
+      }
+    },
     "Add Service" : {
       "localizations" : {
         "ru" : {

@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Refrain",
+    defaultLocalization: "en",
     // macOS 14, not 26: Pretype still runs on 14 and links RefrainKit. What needs 26
     // (Apple's SpeechAnalyzer) is gated with `@available` inside.
     platforms: [.macOS(.v14)],
@@ -18,7 +19,9 @@ let package = Package(
     targets: [
         .target(
             name: "RefrainKit",
-            dependencies: [.product(name: "FluidAudio", package: "FluidAudio")]
+            dependencies: [.product(name: "FluidAudio", package: "FluidAudio")],
+            // Its errors' words, which Settings and Shortcuts show.
+            resources: [.process("Localizable.xcstrings")]
         ),
         // The HTTP side, apart from the engines so Pretype doesn't carry it.
         .target(name: "RefrainServer", dependencies: ["RefrainKit"]),

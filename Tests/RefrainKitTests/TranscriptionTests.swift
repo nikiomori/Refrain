@@ -74,6 +74,16 @@ import Testing
     #expect(Speakers.phrases([], turns: turns).isEmpty)
 }
 
+/// Japanese, Chinese and Thai phrases keep their words together, and end at their own full stops.
+@Test func phrasesInLanguagesWithoutSpaces() {
+    let words = [("今日", 0.0, 0.3), ("は", 0.3, 0.4), ("雨。", 0.4, 0.8), ("明日", 0.9, 1.2), ("晴れ", 1.2, 1.5)]
+        .map { Transcript.Segment(start: $0.1, end: $0.2, text: $0.0) }
+    #expect(Speakers.phrases(words, turns: [.init(speaker: "S1", start: 0, end: 2)], separator: "") == [
+        .init(start: 0, end: 0.8, text: "今日は雨。", speaker: "A"),
+        .init(start: 0.9, end: 1.5, text: "明日晴れ", speaker: "A"),
+    ])
+}
+
 /// Parakeet and the speaker model get 16 kHz mono with every channel in: a call recorded a side
 /// per channel keeps the side on the right.
 @available(macOS 26.0, *)

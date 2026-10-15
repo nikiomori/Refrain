@@ -1,0 +1,56 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "No speech model on this Mac knows the language “%@”." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ни одна модель речи на этом Mac не знает язык «%@»."
+          }
+        }
+      }
+    },
+    "Telling voices apart needs the speaker model: download it in Refrain's Settings, under Models." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чтобы различать голоса, нужна модель «Голоса»: скачайте её в настройках Refrain, на вкладке «Модели»."
+          }
+        }
+      }
+    },
+    "The file isn't audio that macOS can read (m4a, mp3, wav, caf, mp4…)." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В файле нет звука, который macOS умеет читать (m4a, mp3, wav, caf, mp4…)."
+          }
+        }
+      }
+    },
+    "The speech engine stopped. Try again." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Движок распознавания остановился. Попробуйте ещё раз."
+          }
+        }
+      }
+    },
+    "Transcription needs macOS 26 or later." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для расшифровки нужна macOS 26 или новее."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

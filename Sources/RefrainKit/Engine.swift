@@ -39,7 +39,7 @@ public enum EngineError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .stopped: "The speech engine stopped. Try again."
+        case .stopped: String(localized: "The speech engine stopped. Try again.", bundle: .module)
         case .failed(let message): message
         }
     }
@@ -95,6 +95,8 @@ public final class Engine: NSObject, EngineClientProtocol, @unchecked Sendable {
                 let resume = { @Sendable (result: Result<Data, Error>) in once.withLock { $0.take() }?.resume(with: result) }
                 let proxy = connection.value.remoteObjectProxyWithErrorHandler { _ in resume(.failure(EngineError.stopped)) }
                 (proxy as? EngineProtocol)?.run(job) { resume(.success($0)) }
+                // Cancelled already, `onCancel` went first and its `cancel` found no job: sent again, after.
+                if Task.isCancelled { (proxy as? EngineProtocol)?.cancel(id) }
             }
         } onCancel: {
             (connection.value.remoteObjectProxy as? EngineProtocol)?.cancel(id)
