@@ -51,12 +51,13 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
 
     /// After an update of macOS the Neural Engine compiles each model anew: Parakeet ~11 s, the
     /// speaker model longer still. Done now, in the background, rather than in the first request.
-    /// Also right after a download.
+    /// Also right after a download. The compiled models are the engine process's own, so the keys
+    /// are too: what the app compiled before the engine moved out doesn't count.
     private func warmUp() {
         let system = ProcessInfo.processInfo.operatingSystemVersionString
         let models: [(name: String, key: String, ready: Bool, load: @Sendable () async throws -> Void)] = [
-            ("Parakeet", "warmedUpOn", Parakeet.isDownloaded, engine.warmUpParakeet),
-            ("The speaker model", "speakersWarmedUpOn", Speakers.isDownloaded, engine.warmUpSpeakers),
+            ("Parakeet", "engineWarmedUpOn", Parakeet.isDownloaded, engine.warmUpParakeet),
+            ("The speaker model", "engineSpeakersWarmedUpOn", Speakers.isDownloaded, engine.warmUpSpeakers),
         ]
         for model in models where model.ready && UserDefaults.standard.string(forKey: model.key) != system {
             Task(priority: .background) {
