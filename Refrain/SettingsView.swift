@@ -3,23 +3,7 @@ import ServiceManagement
 import Speech
 import SwiftUI
 
-struct SettingsView: View {
-    let model: AppModel
-    /// Opens where it was left, as System Settings does.
-    @AppStorage("settingsTab") private var tab = "general"
-
-    var body: some View {
-        TabView(selection: $tab) {
-            Tab("General", systemImage: "gearshape", value: "general") { GeneralSettings(model: model) }
-            Tab("Models", systemImage: "waveform", value: "models") { ModelSettings(model: model) }
-        }
-        .frame(width: 520)
-        .frame(maxHeight: 720)  // a scroll view past that, never taller than the screen
-        .fixedSize(horizontal: false, vertical: true)  // each tab as tall as its content, like Apple's settings
-    }
-}
-
-private struct GeneralSettings: View {
+struct GeneralSettings: View {
     let model: AppModel
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var port = 0
@@ -27,6 +11,8 @@ private struct GeneralSettings: View {
     var body: some View {
         Form {
             Toggle("Open at Login", isOn: $openAtLogin)
+                // Not a switch: on macOS 27 each one shown holds ~265 MB of graphics memory for a second.
+                .toggleStyle(.checkbox)
                 .onChange(of: openAtLogin) { _, on in
                     do {
                         try on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
@@ -70,7 +56,7 @@ private struct GeneralSettings: View {
 }
 
 /// Each engine, what it costs on disk and which languages it serves.
-private struct ModelSettings: View {
+struct ModelSettings: View {
     let model: AppModel
     @State private var appleCodes: Set<String> = []
 

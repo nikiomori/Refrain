@@ -1,3 +1,4 @@
+import CoreML
 import FluidAudio
 import Foundation
 
@@ -14,6 +15,12 @@ public enum Speakers {
 
     static var folder: URL { MLModelConfigurationUtils.defaultModelsDirectory(for: .diarizer) }
 
+    /// The Neural Engine, as Parakeet. FluidAudio's default lets the GPU in, which held ~630 MB
+    /// of graphics memory through every request for five minutes of audio.
+    static var neuralEngine: MLModelConfiguration {
+        MLModelConfigurationUtils.defaultConfiguration(computeUnits: .cpuAndNeuralEngine)
+    }
+
     public static var isDownloaded: Bool {
         ModelNames.OfflineDiarizer.requiredModels.allSatisfy {
             FileManager.default.fileExists(atPath: folder.appending(path: $0).path)
@@ -27,13 +34,13 @@ public enum Speakers {
     /// Downloads the models if they're missing (the Download button), then loads and compiles
     /// them, so the first request after an update of macOS doesn't.
     public static func warmUp() async throws {
-        try await OfflineDiarizerManager().prepareModels()
+        try await OfflineDiarizerManager().prepareModels(configuration: neuralEngine)
     }
 
     /// ponytail: loaded per request (22 MB, compiled once); keep a loader like Parakeet's if it shows.
     static func turns(in file: URL) async throws -> [Turn] {
         let diarizer = OfflineDiarizerManager()
-        try await diarizer.prepareModels()
+        try await diarizer.prepareModels(configuration: neuralEngine)
         return try await diarizer.process(file).segments.map {
             Turn(speaker: $0.speakerId, start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds))
         }
@@ -42,7 +49,7 @@ public enum Speakers {
     /// The words in phrases, each phrase one voice's: a word goes to the turn that overlaps it
     /// most, or the nearest one when none does (a word heard between turns). Voices are "A",
     /// "B"… in the order they first speak, as OpenAI labels them.
-    /// ponytail: words × turns, ~10 million steps for an hour; a sweep if that ever shows.
+    /// ponytail: words × turns, ~25 ms for an hour (M4 Max); a sweep if that ever shows.
     static func phrases(_ words: [Transcript.Segment], turns: [Turn]) -> [Transcript.Segment] {
         guard !turns.isEmpty, !words.isEmpty else { return [] }
         var letters: [String: String] = [:]

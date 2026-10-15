@@ -14,11 +14,14 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     enum Status: Equatable {
         case starting
         case ready
-        case transcribing(done: TimeInterval, of: TimeInterval)
+        case transcribing
         case failed(String)
     }
 
     private(set) var status = Status.starting
+    /// Seconds of audio done and the file's length, while transcribing. Apart from `status`, so
+    /// the menu bar icon, which reads only that, isn't drawn anew at every step.
+    private(set) var progress: (done: TimeInterval, of: TimeInterval) = (0, 0)
     /// Requests in the queue, the running one included.
     private(set) var queued = 0
     /// Parakeet's download, 0…1, while one runs.
@@ -110,11 +113,12 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
     }
 
     /// One at a time, in order: the Neural Engine does one file faster than two at once.
-    /// From the server and from Shortcuts alike.
+    /// From the server and from Shortcuts alike. A request whose client gives up stops, or never starts.
     func transcribe(_ request: TranscriptionRequest) async throws -> Transcript {
         let previous = tail
         let job = Task {
             await previous?.value
+            try Task.checkCancellation()  // its client gave up while it waited
             let id = UUID()
             running = id
             defer {
@@ -125,15 +129,18 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
                                                       prompt: request.prompt, keywords: request.keywords,
                                                       speakers: request.speakers) { done, total in
                 Task { @MainActor in
+                    let model = AppModel.shared
                     // Late reports of a finished file don't bring its status back.
-                    if AppModel.shared.running == id { AppModel.shared.status = .transcribing(done: done, of: total) }
+                    guard model.running == id else { return }
+                    if model.status != .transcribing { model.status = .transcribing }
+                    model.progress = (done, total)
                 }
             }
         }
         tail = Task { _ = try? await job.value }
         queued += 1
         defer { queued -= 1 }
-        return try await job.value
+        return try await withTaskCancellationHandler { try await job.value } onCancel: { job.cancel() }
     }
 
     func downloadParakeet() {
@@ -190,10 +197,10 @@ nonisolated let log = Logger(subsystem: "dev.nikiomori.refrain", category: "app"
         case .starting: String(localized: "Starting…")
         case .ready: String(localized: "Ready")
         case .failed(let message): message
-        case .transcribing(let done, let total):
+        case .transcribing:
             queued > 1
-                ? String(localized: "Transcribing — \(done.clock) of \(total.clock), \(queued - 1) waiting")
-                : String(localized: "Transcribing — \(done.clock) of \(total.clock)")
+                ? String(localized: "Transcribing — \(progress.done.clock) of \(progress.of.clock), \(queued - 1) waiting")
+                : String(localized: "Transcribing — \(progress.done.clock) of \(progress.of.clock)")
         }
     }
 }

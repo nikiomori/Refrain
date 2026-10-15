@@ -15,6 +15,10 @@ There is no signed release yet: build it from source (below). Signed releases an
   <img src="docs/media/menu.png" width="335" alt="The Refrain menu: transcribing 12:30 of 1:02:03, its address, Copy Address, Settings and Quit">
 </p>
 
+## Focus
+
+Refrain is not a general-purpose Whisper server. It does one job narrowly, and it is tuned first of all for [Pretype](https://github.com/nikiomori/pretype), which dictates, and [Reprise](https://github.com/nikiomori/reprise), which records calls: Pretype's live preview and spelling hints, Reprise's hour-long calls and the voices on them. Any other OpenAI-compatible client works too.
+
 ## Use it
 
 Point any OpenAI-compatible client at `http://127.0.0.1:8178/v1`, with any model name and no key.
@@ -37,7 +41,7 @@ with open("call.m4a", "rb") as f:
 - **`response_format`**: `json`, `text`, `srt`, `vtt` or `verbose_json`, with segment timestamps and, with `timestamp_granularities[]=word`, word timestamps. `diarized_json`, as OpenAI's `gpt-4o-transcribe-diarize` returns it, tells the voices apart: each phrase has a `speaker`, `A`, `B`… It needs the speaker model (22 MB, Settings › Models); without it the request gets a 400.
 - **`model`** is accepted and ignored. `GET /v1/models` lists one model, `auto`.
 
-Requests run one at a time, in order. The port can be changed in Settings; Refrain never moves to another one on its own, since clients have it written down.
+Requests run one at a time, in order; one whose client hangs up is dropped, running or waiting. The port can be changed in Settings; Refrain never moves to another one on its own, since clients have it written down.
 
 ### Connect your apps
 
@@ -84,11 +88,12 @@ Release build, MacBook Pro M4 Max:
 
 | | CPU | Memory |
 |---|---|---|
-| Waiting in the menu bar | 0.07% (no timers; the socket waits) | 20 MB, 63 MB once Parakeet has been used |
-| An hour of Russian through Parakeet | ~330% for 9 s | ~700 MB for about 10 s after a request (the encoder's copy on the Neural Engine, which macOS lets go of by itself), ~90 MB while the model stays loaded |
-| An hour of English through Apple SpeechTranscriber | ~26% for 15 s, plus macOS's speech service | +2 MB |
+| Waiting in the menu bar | 0.005% (no timers; the socket waits) | 14 MB, ~50 MB once Parakeet has been used |
+| An hour of Russian through Parakeet | ~340% for 8.5 s | ~110 MB at most, ~95 MB while the model stays loaded |
+| The same hour with voices told apart (`diarized_json`) | ~300% for 17 s | ~630 MB at most, for a few seconds |
+| An hour of English through Apple SpeechTranscriber | ~30% for 10 s, plus macOS's speech service | +13 MB |
 
-Memory is the physical footprint, as Activity Monitor shows it. The app is 13 MB. Parakeet stays loaded for five minutes after a request, then unloads. A long file is never read into memory whole: Apple's analyzers get it a piece at a time, as they ask for it, and FluidAudio converts it to 16 kHz into a temporary file. A file longer than a minute is shared among up to four of Apple's analyzers at once, cut at quiet moments: an hour of English takes 15 s instead of 38, with the same accuracy. After an update of macOS, Refrain loads Parakeet once in the background, so the first request doesn't wait the ~11 s it takes the Neural Engine to compile it.
+Memory is the physical footprint, as Activity Monitor shows it. The app is 13 MB. The menu bar item and the windows are AppKit's own; SwiftUI draws the windows' contents, loaded when one opens. Parakeet stays loaded for five minutes after a request, then unloads. Parakeet and the speaker model run on the Neural Engine, never the GPU. A long file is never read into memory whole: Apple's analyzers get it a piece at a time, as they ask for it, and Parakeet and the speaker model get it converted once to 16 kHz mono, every channel mixed in, in a temporary file. A file longer than a minute is shared among up to four of Apple's analyzers at once, cut at quiet moments: nearly four times as fast, with the same accuracy. After an update of macOS, Refrain loads Parakeet once in the background, so the first request doesn't wait the ~11 s it takes the Neural Engine to compile it.
 
 ## Privacy
 

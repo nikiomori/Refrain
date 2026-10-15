@@ -52,6 +52,7 @@ public enum Parakeet {
         await loader.release()
     }
 
+    /// `file` is 16 kHz mono (`Transcription.mono`).
     static func transcribe(file: URL, duration: TimeInterval, language: String?,
                            progress: @escaping @Sendable (TimeInterval) -> Void) async throws -> Transcription.Pieces {
         let manager = try await loader.acquire()
@@ -60,14 +61,15 @@ public enum Parakeet {
         var state = TdtDecoderState.make()
         let result: ASRResult
         if duration < 30 {
-            // The model refuses a clip under its minimum; padded with silence it reads fine.
+            // Already 16 kHz mono, so read as it is. The model refuses a clip under its minimum;
+            // padded with silence it reads fine.
             var samples = try AudioConverter().resampleAudioFile(file)
             let minimum = ASRConstants.minimumRequiredSamples(forSampleRate: 16_000)
             if samples.count < minimum { samples += [Float](repeating: 0, count: minimum - samples.count) }
             result = try await manager.transcribe(samples, decoderState: &state, language: hint)
         } else {
-            // Longer files go through FluidAudio's disk-backed path: converted to 16 kHz a piece
-            // at a time into a temporary file, never whole in memory.
+            // Longer files go through FluidAudio's disk-backed path: copied a piece at a time into
+            // a temporary file it maps, never whole in memory.
             let fractions = await manager.transcriptionProgressStream
             let watcher = Task { for try await fraction in fractions { progress(fraction * duration) } }
             defer { watcher.cancel() }
@@ -143,8 +145,8 @@ public enum Parakeet {
 
         func unload() async {
             guard users == 0, let manager else { return }
+            self.manager = nil  // before the wait: a request meanwhile loads a fresh one, not this
             await manager.cleanup()
-            self.manager = nil
             log.notice("Parakeet unloaded")
         }
     }

@@ -16,6 +16,9 @@ import Testing
         let seen = seen
         let server = try Server(port: 0, transcribe: { request in
             await seen.record(request)
+            if request.prompt == "hang up" {  // a long file, for a client that won't wait
+                do { try await Task.sleep(for: .seconds(30)) } catch { await seen.cancel(); throw error }
+            }
             return Transcript(text: "Привет, мир.", segments: [.init(start: 0, end: 1.5, text: "Привет, мир.", speaker: "B")],
                               words: [.init(start: 0, end: 0.6, text: "Привет,"), .init(start: 0.7, end: 1.5, text: "мир.")],
                               language: "ru", duration: 1.5)
@@ -127,6 +130,17 @@ import Testing
         #expect(status == 200)
     }
 
+    /// A client that gives up stops its transcription, rather than leaving it to hold up the queue.
+    @Test func aHangUpCancels() async throws {
+        guard #available(macOS 26.0, *) else { return }
+        let connection = NetworkConnection(to: .hostPort(host: "127.0.0.1", port: .init(rawValue: port)!)) { TCP() }
+        try await connection.send(upload(Data([1]), fields: [("prompt", "hang up")]))
+        while await seen.request == nil { try await Task.sleep(for: .milliseconds(10)) }
+        try await connection.send(Data(), endOfStream: true)
+        for _ in 0..<200 where await !seen.cancelled { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(await seen.cancelled)
+    }
+
     private func upload(_ audio: Data, fields: [(String, String)], extraHeaders: String = "") -> Data {
         let boundary = "----test\(UUID().uuidString)"
         var body = Data()
@@ -159,6 +173,8 @@ import Testing
 actor Seen {
     var request: TranscriptionRequest?
     var bytes: Data?
+    var cancelled = false
+    func cancel() { cancelled = true }
     func record(_ request: TranscriptionRequest) {
         self.request = request
         bytes = try? Data(contentsOf: request.file)

@@ -32,8 +32,9 @@ public final class Server: Sendable {
     /// Big enough for an hour of uncompressed stereo; the file is streamed to disk, never held.
     static let maxBody = 2 << 30
 
-    /// Uploads in flight. The app deletes it whole at launch: what a crash left behind is someone's voice.
-    public static let uploads = URL.temporaryDirectory.appending(path: "Refrain", directoryHint: .isDirectory)
+    /// Uploads in flight, beside the 16 kHz copies made of them. The app deletes it whole at launch:
+    /// what a crash left behind is someone's voice.
+    public static let uploads = Transcription.scratch
 
     public var port: UInt16 { listener.port?.rawValue ?? 0 }
 
@@ -65,7 +66,7 @@ public final class Server: Sendable {
         } catch {
             response = .error(500, error.localizedDescription)  // the disk, or a client already gone
         }
-        try? await connection.send(response.serialized)
+        try? await connection.send(response.serialized, endOfStream: true)
     }
 
     private func respond(on connection: NetworkConnection<TCP>) async throws -> Response {
@@ -119,6 +120,7 @@ public final class Server: Sendable {
         try handle.close()
 
         let form = try Multipart(body: body, boundary: boundary, fileDirectory: Self.uploads)
+        try? FileManager.default.removeItem(at: body)  // the file is out of it: not kept through the transcription
         defer { form.file.map { try? FileManager.default.removeItem(at: $0) } }
         guard let file = form.file else { throw HTTPError(400, "The request has no `file`.") }
         let format = form["response_format"] ?? "json"
@@ -128,10 +130,11 @@ public final class Server: Sendable {
         // `languages[]` and `keywords[]` are what OpenAI's gpt-transcribe takes; the first language picks the engine.
         let language = form["language"] ?? form.list("languages").first
 
+        let request = TranscriptionRequest(file: file, language: language, prompt: form["prompt"],
+                                           keywords: form.list("keywords"), speakers: format == "diarized_json")
         let transcript: Transcript
         do {
-            transcript = try await transcribe(.init(file: file, language: language, prompt: form["prompt"],
-                                                    keywords: form.list("keywords"), speakers: format == "diarized_json"))
+            transcript = try await whileConnected(connection) { [transcribe] in try await transcribe(request) }
         } catch let error as TranscriptionError {
             if case .unsupportedSystem = error { throw HTTPError(500, error.localizedDescription) }
             throw HTTPError(400, error.localizedDescription)
@@ -149,6 +152,22 @@ public final class Server: Sendable {
                                  words: granularities.contains("word")))
         default: return .json(["text": transcript.text])
         }
+    }
+
+    /// `work`, for as long as the client waits for it. One that hangs up (a timeout, an SDK's
+    /// retry, a newer take) cancels it rather than leaving it to hold up the queue: a client sends
+    /// nothing after its request, so the connection's next read ends only when it's gone.
+    private func whileConnected<T: Sendable>(_ connection: NetworkConnection<TCP>,
+                                             _ work: @escaping @Sendable () async throws -> T) async throws -> T {
+        let task = Task(operation: work)
+        let watcher = Task {
+            while let chunk = try? await connection.receive(atMost: 1 << 16).content, !chunk.isEmpty {}
+            task.cancel()
+        }
+        // Not cancelled now: cancelling a read closes the connection, the response unsent. The
+        // client closes it once the response is in; one that doesn't is cut off after a while.
+        defer { Task { try? await Task.sleep(for: .seconds(10)); watcher.cancel() } }
+        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
 }
 

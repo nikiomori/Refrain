@@ -94,15 +94,19 @@ public enum Transcription {
             throw TranscriptionError.unsupportedLanguage(language ?? Locale.current.identifier)
         }
         guard !speakers || Speakers.isDownloaded else { throw TranscriptionError.noSpeakerModel }
-        async let turns = speakers ? Speakers.turns(in: file) : []
         let started = ContinuousClock.now
         progress(0, duration)
+        // Parakeet and the speaker model hear the file as 16 kHz mono, converted once for both.
+        let parakeet = if case .parakeet = engine { true } else { false }
+        let mono = try parakeet || speakers ? Self.mono(audio) : nil
+        defer { mono.map { try? FileManager.default.removeItem(at: $0) } }
+        async let turns = speakers ? Speakers.turns(in: mono!) : []
         let progress: @Sendable (TimeInterval) -> Void = { progress(min($0, duration), duration) }
         var (text, segments, words): (String, [Transcript.Segment], [Transcript.Segment])
         switch engine {
         case .parakeet(let code):
             // ponytail: no hints — FluidAudio's vocabulary boosting knows only English, which goes to Apple.
-            (text, segments, words) = try await Parakeet.transcribe(file: file, duration: duration, language: code, progress: progress)
+            (text, segments, words) = try await Parakeet.transcribe(file: mono!, duration: duration, language: code, progress: progress)
         case .apple(let locale, let preferred):
             (text, segments, words) = try await transcribeWithApple(audio, locale: locale, preferred: preferred,
                                                                     hints: hints(keywords: keywords, prompt: prompt), progress: progress)
@@ -119,6 +123,9 @@ public enum Transcription {
         log.notice("\(Int(duration)) s of audio in \(started.duration(to: .now), privacy: .public) (\(name, privacy: .public))")
         return Transcript(text: text, segments: segments, words: words, language: code, duration: duration)
     }
+
+    /// Where audio in flight is written, the 16 kHz copies and the server's uploads.
+    public static let scratch = URL.temporaryDirectory.appending(path: "Refrain", directoryHint: .isDirectory)
 
     /// `language` picks the engine. Without one: Parakeet if downloaded (it detects the language),
     /// otherwise Apple's model for the system language.
@@ -267,7 +274,14 @@ public enum Transcription {
                     }
                     let reader = try PartReader(url, from: cuts[part], to: cuts[part + 1], as: format)
                     do {
-                        if let end = try await analyzer.analyzeSequence(AsyncThrowingStream(unfolding: reader.next)) {
+                        // A request given up stops its analyzers, which would otherwise read to the end.
+                        let end = try await withTaskCancellationHandler {
+                            try await analyzer.analyzeSequence(AsyncThrowingStream(unfolding: reader.next))
+                        } onCancel: {
+                            Task { await analyzer.cancelAndFinishNow() }
+                        }
+                        try Task.checkCancellation()
+                        if let end {
                             try await analyzer.finalizeAndFinish(through: end)
                         } else {
                             await analyzer.cancelAndFinishNow()
@@ -320,6 +334,33 @@ public enum Transcription {
         return cuts + [audio.length]
     }
 
+    /// The file as Parakeet and the speaker model hear it, in a temporary file: 16 kHz mono with
+    /// every channel mixed in. FluidAudio's own reader keeps the first channel alone, so a call
+    /// recorded a side per channel lost a side, and resamples a short clip at mastering quality,
+    /// a third of its CPU. Written a buffer at a time, never whole in memory.
+    @available(macOS 26.0, *)
+    static func mono(_ audio: AVAudioFile) throws -> URL {
+        let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
+        let reader = try PartReader(audio.url, from: 0, to: audio.length, as: format)
+        try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+        let url = scratch.appending(path: "\(UUID().uuidString).caf")
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: [
+                AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: 16_000, AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 32, AVLinearPCMIsFloatKey: true,
+            ], commonFormat: .pcmFormatFloat32, interleaved: false)
+            while let buffer = try reader.read() {
+                try Task.checkCancellation()
+                try file.write(from: buffer)
+            }
+            file.close()
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            throw error
+        }
+        return url
+    }
+
     /// Downloads the language pack the first time (slow exactly once per language), then
     /// reserves the locale: macOS won't load a model for an app that hasn't. The pool of
     /// reservations is small and outlives the process, so a full pool gives up stale slots
@@ -349,38 +390,55 @@ public enum Transcription {
     }
 }
 
-/// One part of a file in the analyzer's format, read a buffer at a time as the analyzer pulls
-/// it: a part never sits in memory whole, as it would if pushed faster than it's analyzed.
+/// One part of a file in another format, read a buffer at a time as it's asked for: a part
+/// never sits in memory whole, as it would if pushed to an analyzer faster than it's analyzed.
 @available(macOS 26.0, *)
 private final class PartReader: @unchecked Sendable {
     private let file: AVAudioFile
     private let format: AVAudioFormat
     private let converter: AVAudioConverter?
+    private let start: AVAudioFramePosition
     private var position: AVAudioFramePosition
     private let end: AVAudioFramePosition
-    private var started = false
+    private var drained = false
 
     init(_ url: URL, from start: AVAudioFramePosition, to end: AVAudioFramePosition, as format: AVAudioFormat) throws {
         file = try AVAudioFile(forReading: url)
         file.framePosition = start
+        self.start = start
         position = start
         self.end = end
         self.format = format
-        converter = file.processingFormat == format ? nil : AVAudioConverter(from: file.processingFormat, to: format)
-        converter?.downmix = true  // a call with a side in each channel keeps both
+        if file.processingFormat == format {
+            converter = nil
+        } else {
+            guard let converter = AVAudioConverter(from: file.processingFormat, to: format) else {
+                throw TranscriptionError.unreadableAudio
+            }
+            converter.downmix = true  // a call with a side in each channel keeps both
+            self.converter = converter
+        }
     }
 
+    /// For an analyzer: the first buffer says where the part starts, so its timestamps are the file's.
     @Sendable func next() async throws -> AnalyzerInput? {
+        let time = position == start ? CMTime(value: start, timescale: CMTimeScale(file.processingFormat.sampleRate)) : nil
+        return try read().map { AnalyzerInput(buffer: $0, bufferStartTime: time) }
+    }
+
+    /// The next buffer in `format`, or nil at the end of the part.
+    func read() throws -> AVAudioPCMBuffer? {
         let count = AVAudioFrameCount(min(end - position, 1 << 16))
-        guard count > 0 else { return nil }
+        guard count > 0 else { return try drain() }
         let input = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: count)!
-        try file.read(into: input, frameCount: count)
-        guard input.frameLength > 0 else { return nil }
-        // The first buffer says where the part starts, so its timestamps are the file's.
-        let time = started ? nil : CMTime(value: position, timescale: CMTimeScale(input.format.sampleRate))
-        started = true
+        do {
+            try file.read(into: input, frameCount: count)
+        } catch where end == file.length && position > start {
+            return try drain()  // an MP3's or AAC's length is an estimate: a read past its last packet can fail
+        }
+        guard input.frameLength > 0 else { return try drain() }
         position += AVAudioFramePosition(input.frameLength)
-        guard let converter else { return AnalyzerInput(buffer: input, bufferStartTime: time) }
+        guard let converter else { return input }
         let capacity = AVAudioFrameCount(Double(input.frameLength) * format.sampleRate / input.format.sampleRate) + 64
         let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: capacity)!
         var fed = false
@@ -395,6 +453,20 @@ private final class PartReader: @unchecked Sendable {
             return input
         }
         if let error { throw error }
-        return AnalyzerInput(buffer: output, bufferStartTime: time)
+        return output
+    }
+
+    /// What the converter still holds at the end of the part: its resampler runs ~50 ms behind.
+    private func drain() throws -> AVAudioPCMBuffer? {
+        guard let converter, !drained else { return nil }
+        drained = true
+        let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1 << 14)!
+        var error: NSError?
+        converter.convert(to: output, error: &error) { _, status in
+            status.pointee = .endOfStream
+            return nil
+        }
+        if let error { throw error }
+        return output.frameLength > 0 ? output : nil
     }
 }

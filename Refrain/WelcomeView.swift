@@ -4,8 +4,9 @@ import SwiftUI
 /// The button is the consent: nothing is fetched without it.
 struct WelcomeView: View {
     let model: AppModel
+    /// Closes the window.
+    let done: () -> Void
     @AppStorage("onboarded") private var onboarded = false
-    @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -47,7 +48,7 @@ struct WelcomeView: View {
 
             HStack {
                 Spacer()
-                Button("Done") { dismissWindow() }
+                Button("Done", action: done)
                 .keyboardShortcut(.defaultAction)
             }
         }

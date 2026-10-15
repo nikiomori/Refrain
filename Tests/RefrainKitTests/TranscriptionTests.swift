@@ -73,3 +73,30 @@ import Testing
     ])
     #expect(Speakers.phrases([], turns: turns).isEmpty)
 }
+
+/// Parakeet and the speaker model get 16 kHz mono with every channel in: a call recorded a side
+/// per channel keeps the side on the right.
+@available(macOS 26.0, *)
+@Test func monoKeepsTheRightChannel() throws {
+    let rate = 44_100.0
+    let url = URL.temporaryDirectory.appending(path: "\(UUID().uuidString).caf")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2)!
+    let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(2 * rate))!
+    buffer.frameLength = buffer.frameCapacity
+    for frame in 0..<Int(buffer.frameLength) {
+        buffer.floatChannelData![0][frame] = 0
+        buffer.floatChannelData![1][frame] = sin(Float(frame) * 2 * .pi * 440 / Float(rate)) * 0.5
+    }
+    try AVAudioFile(forWriting: url, settings: format.settings).write(from: buffer)
+
+    let mono = try Transcription.mono(AVAudioFile(forReading: url))
+    defer { try? FileManager.default.removeItem(at: mono) }
+    let file = try AVAudioFile(forReading: mono)
+    #expect(file.processingFormat.sampleRate == 16_000 && file.processingFormat.channelCount == 1)
+    #expect(abs(Double(file.length) - 2 * 16_000) < 16)
+    let samples = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))!
+    try file.read(into: samples)
+    let peak = (0..<Int(samples.frameLength)).map { abs(samples.floatChannelData![0][$0]) }.max() ?? 0
+    #expect(peak > 0.1)
+}
